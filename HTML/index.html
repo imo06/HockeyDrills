@@ -390,7 +390,7 @@
                 btn.style.backgroundColor = "#dc3545"; // Make it red to show it's active
                 
                 // Set the brush properties
-                canvas.freeDrawingBrush.color = 'blue';
+                canvas.freeDrawingBrush.color = getActiveColor();
                 canvas.freeDrawingBrush.width = 3;
             } else {
                 btn.innerText = "Enable Drawing Mode";
