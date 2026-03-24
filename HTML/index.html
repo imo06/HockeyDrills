@@ -100,7 +100,7 @@
         }
 
         // A helper function to create a player icon (Letter + Circle)
-        function addCoach(label, color = 'black') {
+        function addCoach(label = "c", color = 'black') {
             // 1. Create the Circle
             const circle = new fabric.Circle({
                 radius: 15,
@@ -142,7 +142,7 @@
             });
 
             // 2. Group them together
-            const playerGroup = new fabric.Group([circle, text], {
+            const playerGroup = new fabric.Group([text], {
                 left: 200,
                 top: 200
             });
@@ -154,7 +154,6 @@
         // Specific wrappers for your buttons
         function addForward() { addPlayer('F', 'blue'); }
         function addDefense() { addPlayer('D', 'red'); }
-        function addCoach() { addPlayer('c', 'black', true); }
 
         // 4. Function to toggle Freehand Drawing
         function toggleDrawing() {
