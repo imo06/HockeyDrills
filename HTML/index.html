@@ -40,6 +40,9 @@
 <body>
 
     <div class="toolbar">
+        <label for="colorPicker">Active Color: </label>
+        <input type="color" id="colorPicker" value="#000000" onchange="updateLiveColor()">
+
         <button onclick="addPuck()">Add Puck</button>
         <button onclick="addNet()">Add Net</button>
         <button onclick="addForward()" style="background-color: #007bff;">Add F</button>
@@ -66,6 +69,36 @@
         // fabric.Image.fromURL('path_to_your_rink_image.jpg', function(img) {
         //     canvas.setBackgroundImage(img, canvas.renderAll.bind(canvas));
         // });
+
+        // A helper to get the current hex code from the picker
+        function getActiveColor() {
+            return document.getElementById('colorPicker').value;
+        }
+
+        // Update the drawing brush color whenever the picker changes
+        function updateLiveColor() {
+            const newColor = getActiveColor();
+            if (canvas.freeDrawingBrush) {
+                canvas.freeDrawingBrush.color = newColor;
+            }
+            
+            // Pro Tip: If an object is selected, change its color immediately!
+            const activeObject = canvas.getActiveObject();
+            if (activeObject) {
+                // If it's a Group (Player Icon), we need to color the circle and text
+                if (activeObject.type === 'group') {
+                    activeObject.getObjects().forEach(obj => {
+                        if (obj.type === 'circle') obj.set('stroke', newColor);
+                        if (obj.type === 'text') obj.set('fill', newColor);
+                    });
+                } else {
+                    // If it's a Net (Rect) or Line
+                    activeObject.set('fill', newColor);
+                    activeObject.set('stroke', newColor);
+                }
+                canvas.renderAll();
+            }
+        }
 
         // 2. Function to add a Puck
         function addPuck() {
@@ -103,7 +136,8 @@
         }
 
         // A helper function to create a player icon (Letter + Circle)
-        function addCoach(label = "c", color = 'black') {
+        function addCoach(label = "c") {
+            const color = getActiveColor();
             // 1. Create the Circle
             const circle = new fabric.Circle({
                 radius: 15,
@@ -133,7 +167,9 @@
             canvas.add(playerGroup);
             canvas.setActiveObject(playerGroup);
         }
-        function addPlayer(label, color = 'black') {
+        
+        function addPlayer(label) {
+            const color = getActiveColor();
             // 1. Create the Text (F, D, or c)
             const text = new fabric.Text(label, {
                 fontSize: 18,
@@ -155,15 +191,16 @@
         }
 
         // Specific wrappers for your buttons
-        function addForward() { addPlayer('F', 'blue'); }
-        function addDefense() { addPlayer('D', 'red'); }
-        function addX() { addPlayer('X', 'black'); }
-        function addO() { addPlayer('O', 'black'); }
+        function addForward() { addPlayer('F'); }
+        function addDefense() { addPlayer('D'); }
+        function addX() { addPlayer('X'); }
+        function addO() { addPlayer('O'); }
 
         // 4. Function to toggle Freehand Drawing
         function toggleDrawing() {
             // Fabric natively supports drawing mode!
             canvas.isDrawingMode = !canvas.isDrawingMode; 
+            canvas.freeDrawingBrush.color = getActiveColor();
             
             const btn = document.getElementById('drawBtn');
             if (canvas.isDrawingMode) {
