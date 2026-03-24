@@ -91,6 +91,7 @@
                 <button onclick="addCoach()" style="background-color: #6c757d;">Add Coach</button>
                 <button onclick="addX()" style="background-color: #6c757d;">Add X</button>
                 <button onclick="addO()" style="background-color: #6c757d;">Add O</button>
+                <button onclick="addPylon()" style="border-left: 5px solid #ff8c00;">Add Pylon</button>
                 <button onclick="enableLineMode()" id="lineBtn">Draw Straight Line</button>
                 <button onclick="toggleDrawing()" id="drawBtn">Enable Drawing Mode</button>
                 <button onclick="deleteSelected()" style="background-color: #dc3545; margin-left: 20px;">Delete Selected</button>
@@ -288,6 +289,25 @@
         function addDefense() { addPlayer('D'); }
         function addX() { addPlayer('X'); }
         function addO() { addPlayer('O'); }
+
+        function addPylon() {
+            const pylon = new fabric.Triangle({
+                width: 20,
+                height: 25,
+                fill: '#ff8c00', // Deep Orange
+                stroke: '#cc7000', // Darker Orange border
+                strokeWidth: 2,
+                left: 400,
+                top: 300,
+                originX: 'center',
+                originY: 'center',
+                hasControls: true, // Coaches might want to scale them for "oversized" obstacles
+                transparentCorners: false
+            });
+            
+            canvas.add(pylon);
+            canvas.setActiveObject(pylon);
+        }
 
         // 4. Function to toggle Freehand Drawing
         function toggleDrawing() {
