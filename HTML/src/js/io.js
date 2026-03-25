@@ -86,6 +86,9 @@ function serializeElement(el) {
   if (el.type === 'line' || el.type === 'arrow') {
     base.points = [[0, 0], [el.w ?? 0, el.h ?? 0]];
   }
+  if (el.type === 'player') {
+    base.playerType = el.playerType ?? 'F';
+  }
 
   return base;
 }
@@ -139,6 +142,7 @@ function deserializeElement(el) {
   return {
     id:          el.id ?? uid(),
     type:        fromExcalidrawType(el.type),
+    playerType:  el.playerType  ?? 'F',
     x:           el.x,
     y:           el.y,
     w:           el.width       ?? 0,

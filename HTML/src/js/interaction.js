@@ -39,6 +39,8 @@ function hitEl(el, x, y) {
       const w = ctx.measureText(el.text || ' ').width;
       return x >= el.x - 4 && x <= el.x + w + 4 && y >= el.y - 4 && y <= el.y + (el.fontSize ?? 20) * 1.4 + 4;
     }
+    case 'player':
+      return Math.hypot(x - el.x, y - el.y) <= PLAYER_R + 4;
     default: return false;
   }
 }
@@ -90,6 +92,23 @@ function onMouseDown(e) {
     State.elements.push(el);
     State.selected = el.id;
     startEditText(el);
+    return;
+  }
+
+  if (State.tool === 'player') {
+    const el = {
+      id:          uid(),
+      type:        'player',
+      playerType:  State.defPlayerType,
+      x,
+      y,
+      strokeColor: State.defStroke,
+      opacity:     100,
+    };
+    State.elements.push(el);
+    State.selected = el.id;
+    updatePropsPanel();
+    render();
     return;
   }
 
@@ -250,6 +269,15 @@ function initToolbarInputs() {
     State.defSW = +e.target.value;
     applyToSelected('strokeWidth', +e.target.value);
   });
+
+  document.getElementById('player-type').addEventListener('change', e => {
+    State.defPlayerType = e.target.value;
+    // If a player is selected, update its type live
+    if (State.selected) {
+      const el = State.elements.find(el => el.id === State.selected);
+      if (el?.type === 'player') { el.playerType = e.target.value; render(); }
+    }
+  });
 }
 
 function applyToSelected(key, value) {
@@ -260,7 +288,7 @@ function applyToSelected(key, value) {
 
 // ── Properties panel ─────────────────────────────────────────
 function initPropsPanel() {
-  ['p-stroke', 'p-fill', 'p-sw', 'p-opacity', 'p-font', 'p-fill-check'].forEach(id => {
+  ['p-stroke', 'p-fill', 'p-sw', 'p-opacity', 'p-font', 'p-fill-check', 'p-player-type'].forEach(id => {
     document.getElementById(id).addEventListener('input',  syncPropsToElement);
     document.getElementById(id).addEventListener('change', syncPropsToElement);
   });
@@ -280,7 +308,13 @@ function updatePropsPanel() {
   document.getElementById('p-sw').value            = el.strokeWidth ?? 2;
   document.getElementById('p-opacity').value       = el.opacity     ?? 100;
   document.getElementById('p-font').value          = el.fontSize    ?? 20;
-  document.getElementById('row-font').style.display = el.type === 'text' ? 'flex' : 'none';
+
+  const isPlayer = el.type === 'player';
+  document.getElementById('row-font').style.display       = el.type === 'text' ? 'flex' : 'none';
+  document.getElementById('row-fill').style.display       = isPlayer ? 'none' : 'flex';
+  document.getElementById('row-sw').style.display         = isPlayer ? 'none' : 'flex';
+  document.getElementById('row-player-type').style.display = isPlayer ? 'flex' : 'none';
+  if (isPlayer) document.getElementById('p-player-type').value = el.playerType ?? 'F';
 }
 
 function syncPropsToElement() {
@@ -289,11 +323,16 @@ function syncPropsToElement() {
   if (!el) return;
 
   el.strokeColor = document.getElementById('p-stroke').value;
-  el.fillColor   = document.getElementById('p-fill-check').checked
-                   ? document.getElementById('p-fill').value : null;
-  el.strokeWidth = +document.getElementById('p-sw').value;
   el.opacity     = +document.getElementById('p-opacity').value;
-  if (el.type === 'text') el.fontSize = +document.getElementById('p-font').value;
+
+  if (el.type === 'player') {
+    el.playerType = document.getElementById('p-player-type').value;
+  } else {
+    el.fillColor   = document.getElementById('p-fill-check').checked
+                     ? document.getElementById('p-fill').value : null;
+    el.strokeWidth = +document.getElementById('p-sw').value;
+    if (el.type === 'text') el.fontSize = +document.getElementById('p-font').value;
+  }
   render();
 }
 

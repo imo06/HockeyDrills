@@ -38,6 +38,7 @@ function drawElement(el, selected) {
     case 'arrow':   drawArrow(el);   break;
     case 'pen':     drawPen(el);     break;
     case 'text':    drawText(el);    break;
+    case 'player':  drawPlayer(el);  break;
   }
 
   if (selected) drawSelection(el);
@@ -101,6 +102,33 @@ function drawText(el) {
   ctx.fillText(txt, el.x, el.y + (el.fontSize ?? 20));
 }
 
+// Player radius in px — fixed size
+const PLAYER_R = 16;
+
+function drawPlayer(el) {
+  const color = el.strokeColor ?? '#e8e8e8';
+  const label = el.playerType  ?? 'F';
+
+  // Circle outline
+  ctx.beginPath();
+  ctx.arc(el.x, el.y, PLAYER_R, 0, Math.PI * 2);
+  ctx.strokeStyle = color;
+  ctx.lineWidth   = 2;
+  ctx.stroke();
+
+  // Label — bold, centered, same color
+  const fontSize = label.length > 1 ? 13 : 15;
+  ctx.font      = `bold ${fontSize}px sans-serif`;
+  ctx.fillStyle = color;
+  ctx.textAlign    = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(label, el.x, el.y);
+
+  // Reset canvas text alignment so other draw calls aren't affected
+  ctx.textAlign    = 'left';
+  ctx.textBaseline = 'alphabetic';
+}
+
 // ── Selection indicators ─────────────────────────────────────
 function drawSelection(el) {
   ctx.save();
@@ -112,6 +140,11 @@ function drawSelection(el) {
   if (el.type === 'line' || el.type === 'arrow') {
     selDot(el.x, el.y);
     selDot(el.x + el.w, el.y + el.h);
+  } else if (el.type === 'player') {
+    ctx.strokeRect(
+      el.x - PLAYER_R - 4, el.y - PLAYER_R - 4,
+      (PLAYER_R + 4) * 2,  (PLAYER_R + 4) * 2
+    );
   } else if (el.type === 'pen') {
     const bb = penBounds(el.points);
     ctx.strokeRect(bb.x - 4, bb.y - 4, bb.w + 8, bb.h + 8);

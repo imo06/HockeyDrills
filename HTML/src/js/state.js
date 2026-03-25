@@ -24,10 +24,13 @@ const State = {
   moveOrigin:  null,   // { x, y } element position at drag begin
 
   // Toolbar defaults
-  defStroke:   '#e8e8e8',
-  defFill:     '#ffffff',
-  defFillOn:   false,
-  defSW:       2,
+  defStroke:     '#e8e8e8',
+  defFill:       '#ffffff',
+  defFillOn:     false,
+  defSW:         2,
+
+  // Player tool default
+  defPlayerType: 'F',
 };
 
 // ── Unique ID generator ──────────────────────────────────────
@@ -38,14 +41,16 @@ function uid() {
 
 // ── Type mapping helpers ─────────────────────────────────────
 
-/** Internal type → Excalidraw type */
+/** Internal type → serialized type */
 function toExcalidrawType(t) {
   return { rect: 'rectangle', pen: 'freedraw', arrow: 'arrow',
-           ellipse: 'ellipse', line: 'line', text: 'text' }[t] ?? 'rectangle';
+           ellipse: 'ellipse', line: 'line', text: 'text',
+           player: 'player' }[t] ?? 'rectangle';
 }
 
-/** Excalidraw type → internal type */
+/** Serialized type → internal type */
 function fromExcalidrawType(t) {
   return { rectangle: 'rect', freedraw: 'pen', arrow: 'arrow',
-           ellipse: 'ellipse', line: 'line', text: 'text' }[t] ?? 'rect';
+           ellipse: 'ellipse', line: 'line', text: 'text',
+           player: 'player' }[t] ?? 'rect';
 }
