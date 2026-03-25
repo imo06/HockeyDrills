@@ -24,8 +24,8 @@ const State = {
   moveOrigin:  null,   // { x, y } element position at drag begin
 
   // Toolbar defaults
-  defStroke:     '#e8e8e8',
-  defFill:       '#ffffff',
+  defStroke:     '#000000',
+  defFill:       '#ffffff57',
   defFillOn:     false,
   defSW:         2,
 
