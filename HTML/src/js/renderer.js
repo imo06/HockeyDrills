@@ -31,6 +31,15 @@ function drawElement(el, selected) {
   ctx.lineCap      = 'round';
   ctx.lineJoin     = 'round';
 
+  // Apply rotation around element centre (for types that support it)
+  const angle = el.angle ?? 0;
+  if (angle) {
+    const c = getElementCenter(el);
+    ctx.translate(c.x, c.y);
+    ctx.rotate(angle);
+    ctx.translate(-c.x, -c.y);
+  }
+
   switch (el.type) {
     case 'rect':    drawRect(el);    break;
     case 'ellipse': drawEllipse(el); break;
@@ -39,12 +48,13 @@ function drawElement(el, selected) {
     case 'pen':     drawPen(el);     break;
     case 'text':    drawText(el);    break;
     case 'player':  drawPlayer(el);  break;
-    case 'pylon': drawPylon(el); break;
-    case 'net':   drawNet(el);   break;
+    case 'pylon':   drawPylon(el);   break;
+    case 'net':     drawNet(el);     break;
   }
 
-  if (selected) drawSelection(el);
   ctx.restore();
+  // Draw selection handles in screen space (after restoring the rotation transform)
+  if (selected) drawSelection(el);
 }
 
 function drawRect(el) {
@@ -143,86 +153,152 @@ function drawPlayer(el) {
 
 function drawPylon(el) {
   const { x, y, w, h } = el;
+
+  // Body (triangle)
   ctx.beginPath();
-  // Main Triangle
-  ctx.moveTo(x + w / 2, y);          // Top tip
-  ctx.lineTo(x + w, y + h * 0.85);   // Bottom right
-  ctx.lineTo(x, y + h * 0.85);       // Bottom left
+  ctx.moveTo(x + w / 2, y);          // apex
+  ctx.lineTo(x + w,     y + h * 0.8); // bottom-right
+  ctx.lineTo(x,         y + h * 0.8); // bottom-left
   ctx.closePath();
+  if (el.fillColor) {
+    ctx.fillStyle = hexAlpha(el.fillColor, el.opacity);
+    ctx.fill();
+  }
   ctx.stroke();
-  
-  // The "Feet" (slight base)
+
+  // Base
   ctx.beginPath();
-  ctx.moveTo(x - w * 0.1, y + h * 0.85);
-  ctx.lineTo(x + w * 1.1, y + h * 0.85);
-  ctx.lineTo(x + w * 1.1, y + h);
-  ctx.lineTo(x - w * 0.1, y + h);
-  ctx.closePath();
+  ctx.rect(x - w * 0.1, y + h * 0.8, w * 1.2, h * 0.2);
+  if (el.fillColor) {
+    ctx.fillStyle = hexAlpha(el.fillColor, el.opacity);
+    ctx.fill();
+  }
   ctx.stroke();
 }
 
 function drawNet(el) {
   const { x, y, w, h } = el;
-  // Scale factor based on the original SVG viewbox (200x160)
-  const sw = w / 200;
-  const sh = h / 160;
+  // Net shape: crossbar across the top, two posts dropping down,
+  // curving back to meet in the middle — works for any drag size/direction.
+  const absW = Math.abs(w), absH = Math.abs(h);
+  const ox = w < 0 ? el.x + w : el.x; // normalised origin
+  const oy = h < 0 ? el.y + h : el.y;
+
+  const postW  = absW * 0.15; // depth of each side post
+  const neckY  = absH * 0.35; // where the back-curve starts
 
   ctx.beginPath();
-  // The Net Path: Front line, sides, and the rounded back (Q)
-  ctx.moveTo(x + 60 * sw, y + 40 * sh);
-  ctx.lineTo(x + 140 * sw, y + 40 * sh); // Front crossbar
-  ctx.lineTo(x + 140 * sw, y + 80 * sh); // Right side
-  ctx.quadraticCurveTo(x + 100 * sw, y + 110 * sh, x + 60 * sw, y + 80 * sh); // Rounded back
+  // Crossbar (front opening)
+  ctx.moveTo(ox,         oy);
+  ctx.lineTo(ox + absW,  oy);
+  // Right post down
+  ctx.lineTo(ox + absW,  oy + neckY);
+  // Curve to back centre
+  ctx.quadraticCurveTo(ox + absW, oy + absH, ox + absW / 2, oy + absH);
+  // Curve back up left side
+  ctx.quadraticCurveTo(ox,        oy + absH, ox, oy + neckY);
+  // Left post back up to crossbar
+  ctx.lineTo(ox, oy);
   ctx.closePath();
+
+  if (el.fillColor) {
+    ctx.fillStyle = hexAlpha(el.fillColor, el.opacity);
+    ctx.fill();
+  }
   ctx.stroke();
 
-  // Draw the posts (circles)
-  ctx.beginPath();
-  ctx.arc(x + 60 * sw, y + 40 * sh, 3 * sw, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.beginPath();
-  ctx.arc(x + 140 * sw, y + 40 * sh, 3 * sw, 0, Math.PI * 2);
-  ctx.fill();
+  // Posts (filled circles at crossbar ends)
+  const pr = Math.max(2, (el.strokeWidth ?? 2) * 1.5);
+  ctx.fillStyle = el.strokeColor ?? '#000000';
+  [ox, ox + absW].forEach(px => {
+    ctx.beginPath();
+    ctx.arc(px, oy, pr, 0, Math.PI * 2);
+    ctx.fill();
+  });
 }
 
-// ── Selection indicators ─────────────────────────────────────
+// ── Selection handles ────────────────────────────────────────
+const HANDLE_R     = 5;    // half-size of resize handle squares
+const HANDLE_HIT_R = 9;    // hit-detection radius (slightly larger for usability)
+const ROT_OFFSET   = 22;   // px above element top for rotation handle
+
 function drawSelection(el) {
   ctx.save();
-  ctx.strokeStyle = '#ff6b35';
-  ctx.lineWidth   = 1.5;
-  ctx.setLineDash([5, 3]);
   ctx.globalAlpha = 1;
+  ctx.setLineDash([]);
 
-  if (el.type === 'line' || el.type === 'arrow') {
-    selDot(el.x, el.y);
-    selDot(el.x + el.w, el.y + el.h);
-  } else if (el.type === 'player') {
-    ctx.strokeRect(
-      el.x - PLAYER_R - 4, el.y - PLAYER_R - 4,
-      (PLAYER_R + 4) * 2,  (PLAYER_R + 4) * 2
-    );
-  } else if (el.type === 'pen') {
-    const bb = penBounds(el.points);
-    ctx.strokeRect(bb.x - 4, bb.y - 4, bb.w + 8, bb.h + 8);
-  } else if (el.type === 'text') {
-    ctx.font = `${el.fontSize ?? 20}px sans-serif`;
-    const txt = el.id === State.editingText?.id ? State.textCursor : (el.text ?? '');
-    const mw  = ctx.measureText(txt || ' ').width;
-    ctx.strokeRect(el.x - 2, el.y, mw + 4, (el.fontSize ?? 20) * 1.4);
-  } else {
-    ctx.strokeRect(el.x - 4, el.y - 4, (el.w || 1) + 8, (el.h || 1) + 8);
+  const handles  = getElementHandles(el);
+  const rotH     = handles.find(h => h.id === 'rot');
+  const resizeH  = handles.filter(h => h.id !== 'rot');
+
+  // ── Dashed bounding outline ──────────────────────────
+  const hasBox = !['line', 'arrow', 'player'].includes(el.type);
+  if (hasBox) {
+    ctx.strokeStyle = '#ff6b35';
+    ctx.lineWidth   = 1.5;
+    ctx.setLineDash([5, 3]);
+
+    if (el.type === 'pen') {
+      const bb = penBounds(el.points);
+      ctx.strokeRect(bb.x - 4, bb.y - 4, bb.w + 8, bb.h + 8);
+    } else if (el.type === 'text') {
+      ctx.font = `${el.fontSize ?? 20}px sans-serif`;
+      const txt = el.id === State.editingText?.id ? State.textCursor : (el.text ?? '');
+      const mw  = ctx.measureText(txt || ' ').width;
+      ctx.strokeRect(el.x - 2, el.y, mw + 4, (el.fontSize ?? 20) * 1.4);
+    } else {
+      // Draw outline in the element's rotated frame
+      const angle = el.angle ?? 0;
+      const c = getElementCenter(el);
+      if (angle) { ctx.save(); ctx.translate(c.x, c.y); ctx.rotate(angle); ctx.translate(-c.x, -c.y); }
+      const nx = el.w >= 0 ? el.x : el.x + el.w;
+      const ny = el.h >= 0 ? el.y : el.y + el.h;
+      ctx.strokeRect(nx - 4, ny - 4, Math.abs(el.w) + 8, Math.abs(el.h) + 8);
+      if (angle) ctx.restore();
+    }
+    ctx.setLineDash([]);
   }
+
+  // ── Rotation handle (circle + connecting line) ───────
+  if (rotH) {
+    const topH = handles.find(h => h.id === 'n') ?? handles.find(h => h.id === 'nw');
+    ctx.strokeStyle = '#ff6b35';
+    ctx.fillStyle   = '#ff6b35';
+    ctx.lineWidth   = 1;
+    if (topH) {
+      ctx.beginPath();
+      ctx.moveTo(topH.x, topH.y);
+      ctx.lineTo(rotH.x, rotH.y);
+      ctx.stroke();
+    }
+    ctx.beginPath();
+    ctx.arc(rotH.x, rotH.y, HANDLE_R + 1, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  // ── Resize / endpoint / scale handles ────────────────
+  resizeH.forEach(h => {
+    if (h.id === 'p1' || h.id === 'p2') {
+      selDot(h.x, h.y);
+    } else if (h.id === 'scale') {
+      ctx.fillStyle = '#ff6b35'; ctx.strokeStyle = '#fff'; ctx.lineWidth = 1.5;
+      ctx.beginPath(); ctx.arc(h.x, h.y, HANDLE_R, 0, Math.PI * 2);
+      ctx.fill(); ctx.stroke();
+    } else {
+      ctx.fillStyle = '#ffffff'; ctx.strokeStyle = '#ff6b35'; ctx.lineWidth = 1.5;
+      ctx.setLineDash([]);
+      ctx.fillRect(h.x - HANDLE_R, h.y - HANDLE_R, HANDLE_R * 2, HANDLE_R * 2);
+      ctx.strokeRect(h.x - HANDLE_R, h.y - HANDLE_R, HANDLE_R * 2, HANDLE_R * 2);
+    }
+  });
+
   ctx.restore();
 }
 
 function selDot(x, y) {
   ctx.save();
-  ctx.fillStyle   = '#ff6b35';
-  ctx.globalAlpha = 1;
-  ctx.setLineDash([]);
-  ctx.beginPath();
-  ctx.arc(x, y, 5, 0, Math.PI * 2);
-  ctx.fill();
+  ctx.fillStyle = '#ff6b35'; ctx.globalAlpha = 1; ctx.setLineDash([]);
+  ctx.beginPath(); ctx.arc(x, y, 5, 0, Math.PI * 2); ctx.fill();
   ctx.restore();
 }
 
@@ -333,6 +409,87 @@ function penBounds(pts) {
     minY = Math.min(minY, y); maxY = Math.max(maxY, y);
   });
   return { x: minX, y: minY, w: maxX - minX, h: maxY - minY };
+}
+
+// ── Element geometry helpers ─────────────────────────────────
+
+/** Returns the visual center of an element in screen space (unaffected by angle). */
+function getElementCenter(el) {
+  if (el.type === 'player') return { x: el.x, y: el.y };
+  if (el.type === 'pen') {
+    const bb = penBounds(el.points);
+    return { x: bb.x + bb.w / 2, y: bb.y + bb.h / 2 };
+  }
+  return { x: el.x + (el.w ?? 0) / 2, y: el.y + (el.h ?? 0) / 2 };
+}
+
+/** Rotate point (px,py) around (cx,cy) by angle radians. */
+function rotatePoint(cx, cy, angle, px, py) {
+  if (!angle) return { x: px, y: py };
+  const cos = Math.cos(angle), sin = Math.sin(angle);
+  const dx = px - cx, dy = py - cy;
+  return { x: cx + dx * cos - dy * sin, y: cy + dx * sin + dy * cos };
+}
+
+/**
+ * Returns all interactive handle positions for an element, in screen space.
+ * Each handle: { id, x, y }
+ */
+function getElementHandles(el) {
+  const angle = el.angle ?? 0;
+
+  // Line / arrow — two draggable endpoints, no rotation handle
+  if (el.type === 'line' || el.type === 'arrow') {
+    return [
+      { id: 'p1', x: el.x,        y: el.y },
+      { id: 'p2', x: el.x + el.w, y: el.y + el.h },
+    ];
+  }
+
+  // Player — one scale handle (bottom-right of glyph), no rotation
+  if (el.type === 'player') {
+    const r = (el.fontSize ?? 32) / 2;
+    return [{ id: 'scale', x: el.x + r, y: el.y + r }];
+  }
+
+  // Pen — four bounding-box corners, no rotation
+  if (el.type === 'pen') {
+    const bb = penBounds(el.points);
+    return [
+      { id: 'nw', x: bb.x,        y: bb.y },
+      { id: 'ne', x: bb.x + bb.w, y: bb.y },
+      { id: 'se', x: bb.x + bb.w, y: bb.y + bb.h },
+      { id: 'sw', x: bb.x,        y: bb.y + bb.h },
+    ];
+  }
+
+  // Text — no handles (use props panel for font size)
+  if (el.type === 'text') return [];
+
+  // rect / ellipse / pylon / net — 8 resize handles + rotation handle
+  const nx = el.w >= 0 ? el.x : el.x + el.w;
+  const ny = el.h >= 0 ? el.y : el.y + el.h;
+  const nw = Math.abs(el.w || 1), nh = Math.abs(el.h || 1);
+  const x2 = nx + nw, y2 = ny + nh;
+  const cx = nx + nw / 2, cy = ny + nh / 2;
+
+  const pts = [
+    { id: 'nw',  x: nx, y: ny },
+    { id: 'n',   x: cx, y: ny },
+    { id: 'ne',  x: x2, y: ny },
+    { id: 'e',   x: x2, y: cy },
+    { id: 'se',  x: x2, y: y2 },
+    { id: 's',   x: cx, y: y2 },
+    { id: 'sw',  x: nx, y: y2 },
+    { id: 'w',   x: nx, y: cy },
+    { id: 'rot', x: cx, y: ny - ROT_OFFSET },
+  ];
+
+  if (!angle) return pts;
+  return pts.map(p => {
+    const rp = rotatePoint(cx, cy, angle, p.x, p.y);
+    return { id: p.id, x: rp.x, y: rp.y };
+  });
 }
 
 // ── Line style helpers ───────────────────────────────────────

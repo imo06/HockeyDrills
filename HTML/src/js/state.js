@@ -35,6 +35,14 @@ const State = {
 
   // Line style default (applies to line, arrow, pen)
   defLineStyle: 'solid',
+
+  // Handle drag state (resize / rotate)
+  dragMode:          null,   // 'resize' | 'rotate' | null
+  dragHandle:        null,   // handle id string
+  dragOrigin:        null,   // { x, y } mouse position at drag start
+  dragElementSnap:   null,   // deep copy of element at drag start
+  rotateCenter:      null,   // { x, y } rotation center
+  rotateStartAngle:  null,   // initial mouse angle from center
 };
 
 // ── Unique ID generator ──────────────────────────────────────
@@ -56,5 +64,5 @@ function toExcalidrawType(t) {
 function fromExcalidrawType(t) {
   return { rectangle: 'rect', freedraw: 'pen', arrow: 'arrow',
            ellipse: 'ellipse', line: 'line', text: 'text',
-           player: 'player' }[t] ?? 'rect';
+           player: 'player', pylon: 'pylon', net: 'net' }[t] ?? 'rect';
 }

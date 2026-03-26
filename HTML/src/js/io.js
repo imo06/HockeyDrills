@@ -55,6 +55,7 @@ function serializeElement(el) {
     y:               el.y,
     width:           el.w ?? 0,
     height:          el.h ?? 0,
+    angle:           el.angle ?? 0,
     strokeColor:     el.strokeColor ?? '#e8e8e8',
     backgroundColor: el.fillColor   ?? 'transparent',
     fillStyle:       el.fillColor   ? 'solid' : 'hachure',
@@ -92,6 +93,11 @@ function serializeElement(el) {
   }
   if (el.type === 'player') {
     base.playerType = el.playerType ?? 'F';
+    base.fontSize   = el.fontSize   ?? 32;
+  }
+  if (el.type === 'pylon' || el.type === 'net') {
+    base.backgroundColor = el.fillColor ?? 'transparent';
+    base.fillStyle       = el.fillColor ? 'solid' : 'hachure';
   }
 
   return base;
@@ -147,18 +153,19 @@ function deserializeElement(el) {
     id:          el.id ?? uid(),
     type:        fromExcalidrawType(el.type),
     playerType:  el.playerType  ?? 'F',
+    fontSize:    el.fontSize    ?? (el.type === 'player' ? 32 : 20),
     lineStyle:   el.lineStyle   ?? 'solid',
+    angle:       el.angle       ?? 0,
     x:           el.x,
     y:           el.y,
     w:           el.width       ?? 0,
     h:           el.height      ?? 0,
-    strokeColor: el.strokeColor ?? '#e8e8e8',
+    strokeColor: el.strokeColor ?? '#000000',
     fillColor:   (el.backgroundColor === 'transparent' || !el.backgroundColor)
                    ? null : el.backgroundColor,
     strokeWidth: el.strokeWidth ?? 2,
     opacity:     el.opacity     ?? 100,
     text:        el.text        ?? '',
-    fontSize:    el.fontSize    ?? 20,
     points:      el.points      ?? null,
   };
 }
