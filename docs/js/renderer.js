@@ -180,15 +180,16 @@ function drawNet(el) {
     ctx.drawImage(img, nx, ny, Math.abs(el.w), Math.abs(el.h));
   } else {
     // Fallback while the sprite is loading
-    const absW = Math.abs(el.w), absH = Math.abs(el.h);
-    const ox = el.w < 0 ? el.x + el.w : el.x;
-    const oy = el.h < 0 ? el.y + el.h : el.y;
+    const { x, y, w, h } = el;
+    // This scales the internal SVG paths to the fixed w/h (80x60)
+    const sw = w / 200; 
+    const sh = h / 160;
+
     ctx.beginPath();
-    ctx.moveTo(ox,        oy);
-    ctx.lineTo(ox + absW, oy);
-    ctx.lineTo(ox + absW, oy + absH * 0.6);
-    ctx.quadraticCurveTo(ox + absW, oy + absH, ox + absW / 2, oy + absH);
-    ctx.quadraticCurveTo(ox, oy + absH, ox, oy + absH * 0.6);
+    ctx.moveTo(x + 60 * sw, y + 40 * sh);
+    ctx.lineTo(x + 140 * sw, y + 40 * sh);
+    ctx.lineTo(x + 140 * sw, y + 80 * sh);
+    ctx.quadraticCurveTo(x + 100 * sw, y + 110 * sh, x + 60 * sw, y + 80 * sh);
     ctx.closePath();
     ctx.stroke();
   }

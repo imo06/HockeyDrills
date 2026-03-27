@@ -141,14 +141,15 @@ function onMouseDown(e) {
     return;
   }
 
-  if (State.tool === 'pylon') {
+  if (['pylon', 'net'].includes(State.tool)) {
+    const isNet = State.tool === 'net';
     const el = {
       id:          uid(),
-      type:        'pylon',
+      type:        State.tool,
       x:           x - 15,   // center the 30px-wide pylon on click
       y:           y - 20,   // center the 40px-tall pylon on click
-      w:           30,
-      h:           40,
+      w:           isNet ? 30 : 30,
+      h:           isNet ? 50 : 40,
       strokeColor: State.defStroke,
       fillColor:   '#ff8c00', // orange by default
       opacity:     100,
