@@ -15,5 +15,9 @@ To be able to:
    - Pylons
    - Position players
    - Various other shapes
+
 2) Save drills as a JSON and in the backend to use later and share
+
 3) Create a practice as a set of drills
+
+4) Mobile use: Draw easily on a mobile device (probably a tablet), and put together practices easily
