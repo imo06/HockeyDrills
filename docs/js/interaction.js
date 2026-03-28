@@ -161,9 +161,23 @@ function onMouseDown(e) {
   }
 
   if (State.tool === 'net') {
-    // Net is drag-to-place so you can control size/orientation
-    State.drawing   = true;
-    State.dragStart = { x, y };
+    // Default size matches the net SVG aspect ratio (100×70 → 60×42 px)
+    const W = 30, H = 50;
+    const el = {
+      id:          uid(),
+      type:        'net',
+      x:           x - W / 2,   // centre on click
+      y:           y - H / 2,
+      w:           W,
+      h:           H,
+      strokeColor: State.defStroke,
+      fillColor:   '#4488cc',    // ice-blue default
+      opacity:     100,
+    };
+    State.elements.push(el);
+    State.selected = el.id;
+    updatePropsPanel();
+    render();
     return;
   }
 
