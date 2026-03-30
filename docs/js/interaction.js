@@ -9,6 +9,7 @@ function initInteraction() {
   initToolbarInputs();
   initPropsPanel();
   document.getElementById('btn-del').addEventListener('click', deleteSelected);
+  document.getElementById('btn-dup').addEventListener('click', duplicateSelected);
   document.getElementById('p-is-coach').addEventListener('change', (e) => {
     const selectedIds = Array.isArray(State.selected) ? State.selected : [State.selected];
 
@@ -98,8 +99,8 @@ function onMouseDown(e) {
   if (State.editingText) { commitText(); return; }
 
   if (State.tool === 'select') {
-    // 1. Check if clicking a handle on the selected element (resize/rotate takes priority)
-    if (State.selected) {
+    // 1. Handle on single selected element takes priority
+    if (State.selected && !e.shiftKey) {
       const selEl = State.elements.find(e => e.id === State.selected);
       if (selEl) {
         const handle = pickHandle(selEl, x, y);
@@ -107,20 +108,49 @@ function onMouseDown(e) {
       }
     }
 
-    // 2. Regular element hit → move
     const hit = hitTest(x, y);
+
     if (hit) {
-      State.selected  = hit.id;
-      State.moveStart = { x, y };
-      // Store correct origin depending on type
-      if (hit.type === 'pen') {
-        State.moveOrigin = { isPen: true, points: hit.points.map(p => [...p]) };
+      if (e.shiftKey) {
+        // Shift+click: toggle in multi-selection, keep existing group
+        if (State.multiSelected.has(hit.id)) {
+          State.multiSelected.delete(hit.id);
+          State.selected = State.multiSelected.size > 0
+            ? [...State.multiSelected][State.multiSelected.size - 1] : null;
+        } else {
+          // Add previously single-selected item to group first
+          if (State.selected) State.multiSelected.add(State.selected);
+          State.multiSelected.add(hit.id);
+          State.selected = hit.id;
+        }
       } else {
-        State.moveOrigin = { x: hit.x, y: hit.y };
+        // Regular click: if not already in group, collapse to single
+        if (!State.multiSelected.has(hit.id)) {
+          State.multiSelected.clear();
+          State.selected = hit.id;
+        }
+        // Begin group or single move
+        State.moveStart = { x, y };
+        const ids = State.multiSelected.size > 1
+          ? [...State.multiSelected] : [State.selected];
+        State.multiMoveOrigins = new Map(
+          ids.map(id => {
+            const el = State.elements.find(e => e.id === id);
+            return el ? [id, el.type === 'pen'
+              ? { isPen: true, points: el.points.map(p => [...p]) }
+              : { x: el.x, y: el.y }] : null;
+          }).filter(Boolean)
+        );
       }
-    } else {
+    } else if (!e.shiftKey) {
+      // Click on empty canvas → clear selection, start rubber-band
       State.selected = null;
+      State.multiSelected.clear();
+      State.dragMode  = 'band';
+      State.dragOrigin = { x, y };
+      State.bandRect   = { x, y, w: 0, h: 0 };
     }
+
     updatePropsPanel();
     render();
     return;
@@ -220,6 +250,15 @@ function onMouseDown(e) {
 function onMouseMove(e) {
   const { x, y } = canvasPos(e);
 
+  // ── Rubber-band selection ────────────────────────────
+  if (State.dragMode === 'band') {
+    const ox = State.dragOrigin.x, oy = State.dragOrigin.y;
+    State.bandRect = { x: Math.min(ox, x), y: Math.min(oy, y),
+                       w: Math.abs(x - ox), h: Math.abs(y - oy) };
+    render();
+    return;
+  }
+
   // ── Resize drag ──────────────────────────────────────
   if (State.dragMode === 'resize') {
     const el = State.elements.find(e => e.id === State.selected);
@@ -242,20 +281,21 @@ function onMouseMove(e) {
     return;
   }
 
-  // ── Move selected element ────────────────────────────
-  if (State.tool === 'select' && State.moveStart && State.selected) {
-    const el = State.elements.find(e => e.id === State.selected);
-    if (el) {
-      const dx = x - State.moveStart.x;
-      const dy = y - State.moveStart.y;
-      if (el.type === 'pen' && State.moveOrigin?.isPen) {
-        el.points = State.moveOrigin.points.map(([px, py]) => [px + dx, py + dy]);
+  // ── Move (single or group) ───────────────────────────
+  if (State.tool === 'select' && State.moveStart && State.multiMoveOrigins) {
+    const dx = x - State.moveStart.x;
+    const dy = y - State.moveStart.y;
+    State.multiMoveOrigins.forEach((orig, id) => {
+      const el = State.elements.find(e => e.id === id);
+      if (!el) return;
+      if (orig.isPen) {
+        el.points = orig.points.map(([px, py]) => [px + dx, py + dy]);
       } else {
-        el.x = State.moveOrigin.x + dx;
-        el.y = State.moveOrigin.y + dy;
+        el.x = orig.x + dx;
+        el.y = orig.y + dy;
       }
-      render();
-    }
+    });
+    render();
     return;
   }
 
@@ -273,6 +313,31 @@ function onMouseMove(e) {
 function onMouseUp(e) {
   const { x, y } = canvasPos(e);
 
+  // ── Rubber-band: select all elements inside the rect ─
+  if (State.dragMode === 'band') {
+    const { x: bx, y: by, w: bw, h: bh } = State.bandRect ?? {};
+    if (bw > 4 && bh > 4) {
+      State.elements.forEach(el => {
+        const c = getElementCenter(el);
+        if (c.x >= bx && c.x <= bx + bw && c.y >= by && c.y <= by + bh) {
+          State.multiSelected.add(el.id);
+        }
+      });
+      if (State.multiSelected.size === 1) {
+        State.selected = [...State.multiSelected][0];
+        State.multiSelected.clear();
+      } else if (State.multiSelected.size > 1) {
+        State.selected = [...State.multiSelected][State.multiSelected.size - 1];
+      }
+    }
+    State.dragMode   = null;
+    State.dragOrigin = null;
+    State.bandRect   = null;
+    updatePropsPanel();
+    render();
+    return;
+  }
+
   // Handle drag (resize / rotate) takes priority
   if (State.dragMode) {
     State.dragMode         = null;
@@ -286,8 +351,8 @@ function onMouseUp(e) {
     return;
   }
 
-  State.moveStart  = null;
-  State.moveOrigin = null;
+  State.moveStart       = null;
+  State.multiMoveOrigins = null;
 
   if (!State.drawing) return;
   State.drawing = false;
@@ -369,13 +434,20 @@ function initKeyboard() {
     }
 
     if (e.key === 'Escape') {
-      State.selected = []; // Or State.selected = null depending on your array setup
+      State.selected = null;
+      State.multiSelected.clear();
       render();
       updatePropsPanel();
       return;
     }
 
-    if ((e.key === 'Delete' || e.key === 'Backspace') && State.selected) {
+    if ((e.key === 'd' || e.key === 'D') && (e.ctrlKey || e.metaKey)) {
+      e.preventDefault();
+      duplicateSelected();
+      return;
+    }
+
+    if ((e.key === 'Delete' || e.key === 'Backspace') && (State.selected || State.multiSelected.size)) {
       deleteSelected();
       return;
     }
@@ -460,6 +532,8 @@ function initPropsPanel() {
 
 function updatePropsPanel() {
   const panel = document.getElementById('props');
+  // Hide props when multiple items selected — no single element to inspect
+  if (State.multiSelected.size > 1) { panel.classList.remove('visible'); return; }
   if (!State.selected) { panel.classList.remove('visible'); return; }
 
   const el = State.elements.find(e => e.id === State.selected);
@@ -518,11 +592,50 @@ function syncPropsToElement() {
 
 // ── Delete ───────────────────────────────────────────────────
 function deleteSelected() {
-  if (!State.selected) return;
-  State.elements = State.elements.filter(e => e.id !== State.selected);
-  State.selected = null;
+  const ids = allSelectedIds();
+  if (!ids.length) return;
+  State.elements    = State.elements.filter(e => !ids.includes(e.id));
+  State.selected    = null;
+  State.multiSelected.clear();
   updatePropsPanel();
   render();
+}
+
+// ── Duplicate ────────────────────────────────────────────────
+function duplicateSelected() {
+  const ids = allSelectedIds();
+  if (!ids.length) return;
+  const newIds = [];
+  ids.forEach(id => {
+    const el = State.elements.find(e => e.id === id);
+    if (!el) return;
+    const copy = JSON.parse(JSON.stringify(el));
+    copy.id = uid();
+    // Offset so it doesn't land exactly on top
+    copy.x = (copy.x ?? 0) + 16;
+    copy.y = (copy.y ?? 0) + 16;
+    if (copy.points) copy.points = copy.points.map(([px, py]) => [px + 16, py + 16]);
+    State.elements.push(copy);
+    newIds.push(copy.id);
+  });
+  // Select the duplicates
+  State.multiSelected.clear();
+  if (newIds.length === 1) {
+    State.selected = newIds[0];
+  } else {
+    newIds.forEach(id => State.multiSelected.add(id));
+    State.selected = newIds[newIds.length - 1];
+  }
+  updatePropsPanel();
+  render();
+  showToast(`✓ Duplicated ${newIds.length} element${newIds.length > 1 ? 's' : ''}`);
+}
+
+/** Returns array of all currently selected IDs (single + multi). */
+function allSelectedIds() {
+  const ids = new Set(State.multiSelected);
+  if (State.selected) ids.add(State.selected);
+  return [...ids];
 }
 
 // ── Handle drag helpers ───────────────────────────────────────

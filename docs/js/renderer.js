@@ -23,8 +23,20 @@ function initRenderer() {
 // ── Main render loop ─────────────────────────────────────────
 function render() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
-  State.elements.forEach(el => drawElement(el, el.id === State.selected));
+  State.elements.forEach(el => drawElement(el, el.id === State.selected || State.multiSelected.has(el.id)));
   if (State.editingText) drawTextCursor();
+  // Rubber-band selection box
+  if (State.bandRect) {
+    const { x, y, w, h } = State.bandRect;
+    ctx.save();
+    ctx.strokeStyle = '#ff6b35';
+    ctx.lineWidth   = 1;
+    ctx.setLineDash([4, 3]);
+    ctx.fillStyle   = 'rgba(255,107,53,0.06)';
+    ctx.fillRect(x, y, w, h);
+    ctx.strokeRect(x, y, w, h);
+    ctx.restore();
+  }
 }
 
 // ── Individual element drawing ───────────────────────────────
@@ -214,7 +226,7 @@ function drawNet(el) {
 }
 
 function drawPuck(el) {
-  const r = 6;
+  const r = el.r ?? 12;
   // Black rubber disc with a subtle highlight ring
   ctx.beginPath();
   ctx.arc(el.x, el.y, r, 0, Math.PI * 2);

@@ -37,12 +37,17 @@ const State = {
   defLineStyle: 'solid',
 
   // Handle drag state (resize / rotate)
-  dragMode:          null,   // 'resize' | 'rotate' | null
+  dragMode:          null,   // 'resize' | 'rotate' | 'band' | null
   dragHandle:        null,   // handle id string
   dragOrigin:        null,   // { x, y } mouse position at drag start
   dragElementSnap:   null,   // deep copy of element at drag start
   rotateCenter:      null,   // { x, y } rotation center
   rotateStartAngle:  null,   // initial mouse angle from center
+
+  // Multi-select
+  multiSelected:     new Set(),   // Set of selected element IDs
+  bandRect:          null,        // { x, y, w, h } rubber-band box while dragging
+  multiMoveOrigins:  null,        // Map id→{x,y} snapshots for group move
 };
 
 // ── Unique ID generator ──────────────────────────────────────
