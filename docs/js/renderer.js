@@ -226,7 +226,7 @@ function drawNet(el) {
 }
 
 function drawPuck(el) {
-  const r = el.r ?? 12;
+  const r = 6;
   // Black rubber disc with a subtle highlight ring
   ctx.beginPath();
   ctx.arc(el.x, el.y, r, 0, Math.PI * 2);
@@ -613,4 +613,84 @@ function wigglyPenPath(pts) {
     }
     totalLen += segLen;
   }
+}
+/** * Calculates the bounding box of the current selection (single or multi)
+ */
+function getSelectionBounds() {
+  const selectedIds = Array.from(State.multiSelected);
+  if (State.selected) selectedIds.push(State.selected);
+  
+  if (selectedIds.length === 0) return null;
+
+  const selectedEls = State.elements.filter(el => selectedIds.includes(el.id));
+  
+  let minX = Infinity, minY = Infinity;
+  let maxX = -Infinity, maxY = -Infinity;
+
+  selectedEls.forEach(el => {
+    // Determine bounds based on element type
+    const x = el.x;
+    const y = el.y;
+    const w = el.w || (el.type === 'player' ? el.fontSize : 20);
+    const h = el.h || (el.type === 'player' ? el.fontSize : 20);
+
+    minX = Math.min(minX, x);
+    minY = Math.min(minY, y);
+    maxX = Math.max(maxX, x + w);
+    maxY = Math.max(maxY, y + h);
+  });
+
+  return {
+    x: minX, y: minY, w: maxX - minX, h: maxY - minY,
+    cx: minX + (maxX - minX) / 2,
+    cy: minY + (maxY - minY) / 2
+  };
+}
+
+function flipSelection(axis = 'horizontal') {
+  const bounds = getSelectionBounds();
+  if (!bounds) return;
+
+  const selectedIds = Array.from(State.multiSelected);
+  if (State.selected) selectedIds.push(State.selected);
+
+  State.elements.forEach(el => {
+    if (selectedIds.includes(el.id)) {
+      if (axis === 'horizontal') {
+        // Reflect across the vertical center line
+        const distToCenter = el.x - bounds.cx;
+        el.x = bounds.cx - distToCenter - (el.w || 0);
+        if (el.angle !== undefined) el.angle = -el.angle;
+      } else {
+        // Reflect across the horizontal center line
+        const distToCenter = el.y - bounds.cy;
+        el.y = bounds.cy - distToCenter - (el.h || 0);
+        if (el.angle !== undefined) el.angle = Math.PI - el.angle;
+      }
+    }
+  });
+  render();
+}
+
+function rotateSelection(angleDeg = 90) {
+  const bounds = getSelectionBounds();
+  if (!bounds) return;
+
+  const rad = (angleDeg * Math.PI) / 180;
+  const ids = Array.from(State.multiSelected);
+
+  State.elements.forEach(el => {
+    if (ids.includes(el.id)) {
+      // 1. Rotate the position relative to group center
+      const nx = bounds.cx + (el.x - bounds.cx) * Math.cos(rad) - (el.y - bounds.cy) * Math.sin(rad);
+      const ny = bounds.cy + (el.x - bounds.cx) * Math.sin(rad) + (el.y - bounds.cy) * Math.cos(rad);
+      
+      el.x = nx;
+      el.y = ny;
+
+      // 2. Rotate the element's internal orientation
+      el.angle = (el.angle || 0) + rad;
+    }
+  });
+  render();
 }

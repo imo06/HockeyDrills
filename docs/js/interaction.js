@@ -452,6 +452,13 @@ function initKeyboard() {
       return;
     }
 
+    // Inside window.addEventListener('keydown', ...)
+    if (e.ctrlKey || e.metaKey) {
+      if (e.key === 'h') { e.preventDefault(); flipSelection('horizontal'); }
+      if (e.key === 'j') { e.preventDefault(); flipSelection('vertical'); }
+      if (e.key === 'r') { e.preventDefault(); rotateSelection(90); }
+    }
+
     const shortcuts = { v: 'select', r: 'rect', e: 'ellipse', l: 'line', a: 'arrow', t: 'text', p: 'pen' };
     const t = shortcuts[e.key.toLowerCase()];
     if (t) setTool(t);
@@ -721,4 +728,30 @@ function scalePenPoints(el, origEl, handle, dx, dy) {
     nx1 + ((px - bb.x) / bb.w) * nw,
     ny1 + ((py - bb.y) / bb.h) * nh,
   ]);
+}
+/** Returns the {x, y, w, h} bounding box of all currently selected elements */
+function getSelectionBounds() {
+  const ids = Array.from(State.multiSelected);
+  if (ids.length === 0 && State.selected) ids.push(State.selected);
+  if (ids.length === 0) return null;
+
+  const selectedEls = State.elements.filter(el => ids.includes(el.id));
+  
+  let minX = Infinity, minY = Infinity;
+  let maxX = -Infinity, maxY = -Infinity;
+
+  selectedEls.forEach(el => {
+    const { x, y, w, h } = el;
+    // For simple points (pylons/players), w/h might be 0, use radius/fontSize
+    const width = w || (el.fontSize || 20);
+    const height = h || (el.fontSize || 20);
+    
+    minX = Math.min(minX, x);
+    minY = Math.min(minY, y);
+    maxX = Math.max(maxX, x + width);
+    maxY = Math.max(maxY, y + height);
+  });
+
+  return { x: minX, y: minY, w: maxX - minX, h: maxY - minY, 
+           cx: minX + (maxX - minX) / 2, cy: minY + (maxY - minY) / 2 };
 }
