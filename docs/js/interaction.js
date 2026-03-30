@@ -10,6 +10,10 @@ function initInteraction() {
   initPropsPanel();
   document.getElementById('btn-del').addEventListener('click', deleteSelected);
   document.getElementById('btn-dup').addEventListener('click', duplicateSelected);
+  // Group interaction
+  document.getElementById('btn-group-flip-h').addEventListener('click', () => flipSelection('horizontal'));
+  document.getElementById('btn-group-flip-v').addEventListener('click', () => flipSelection('vertical'));
+  document.getElementById('btn-group-rotate').addEventListener('click', () => rotateSelection(90));
   document.getElementById('p-is-coach').addEventListener('change', (e) => {
     const selectedIds = Array.isArray(State.selected) ? State.selected : [State.selected];
 
@@ -455,7 +459,7 @@ function initKeyboard() {
     // Inside window.addEventListener('keydown', ...)
     if (e.ctrlKey || e.metaKey) {
       if (e.key === 'h') { e.preventDefault(); flipSelection('horizontal'); }
-      if (e.key === 'j') { e.preventDefault(); flipSelection('vertical'); }
+      if (e.key === 'v') { e.preventDefault(); flipSelection('vertical'); }
       if (e.key === 'r') { e.preventDefault(); rotateSelection(90); }
     }
 
@@ -539,8 +543,21 @@ function initPropsPanel() {
 
 function updatePropsPanel() {
   const panel = document.getElementById('props');
+  const propsEl = document.getElementById('props');
+  const groupPropsEl = document.getElementById('group-props');
+  
+  const hasSingle = !!State.selected;
+  const hasMulti  = State.multiSelected.size > 1;
+
+  // Show individual props only if exactly one thing is selected
+  propsEl.style.display = (hasSingle && !hasMulti) ? 'block' : 'none';
+
+  // Show group props if multiple things are selected
+  groupPropsEl.style.display = hasMulti ? 'block' : 'none';
+
   // Hide props when multiple items selected — no single element to inspect
   if (State.multiSelected.size > 1) { panel.classList.remove('visible'); return; }
+  
   if (!State.selected) { panel.classList.remove('visible'); return; }
 
   const el = State.elements.find(e => e.id === State.selected);
