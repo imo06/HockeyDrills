@@ -192,3 +192,41 @@ function deserializeElement(el) {
     points:      el.points      ?? null,
   };
 }
+
+async function saveToCloud() {
+    // 1. Find your direct Hugging Face URL. 
+    // It usually looks like: https://username-spacename.hf.space
+    const HF_URL = "https://imo06-hockey-drill-lab.hf.space";
+
+    // 2. Collect all the data into one object
+    const drillPacket = {
+        name: document.getElementById('drillName').value || "Unnamed Drill",
+        tags: document.getElementById('drillTags').value || "",
+        explanation: document.getElementById('drillExplanation').value || "",
+        rinkMode: document.getElementById('rinkView').value,
+        canvasState: canvas.toJSON() // This captures all your players/lines
+    };
+
+    console.log("Attempting to save...", drillPacket);
+
+    try {
+        // 3. Send the data using "fetch"
+        const response = await fetch(`${HF_URL}/save-drill`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(drillPacket)
+        });
+
+        if (response.ok) {
+            const result = await response.json();
+            alert("Success! " + result.message);
+        } else {
+            alert("Server responded with an error. Check Hugging Face Logs.");
+        }
+    } catch (error) {
+        console.error("Connection failed:", error);
+        alert("Could not connect to the backend. Is it running?");
+    }
+}

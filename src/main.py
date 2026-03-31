@@ -10,7 +10,11 @@ app = FastAPI()
 # Enable CORS so your HTML file can talk to this Python server
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"], 
+    allow_origins=[
+        "*",
+        "http://localhost:5500",      # For local testing
+        "https://imo06.github.io"  # YOUR GITHUB PAGES URL
+    ],
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -56,4 +60,5 @@ async def get_drill(filename: str):
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="127.0.0.1", port=8000)
+    port = int(os.environ.get("PORT", 7860))
+    uvicorn.run(app, host="0.0.0.0", port=port)
