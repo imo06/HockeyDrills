@@ -677,20 +677,37 @@ function rotateSelection(degrees) {
   if (!bounds) return;
 
   const rad = (degrees * Math.PI) / 180;
-  const ids = Array.from(State.multiSelected);
-  if (State.selected) ids.push(State.selected);
+  const cos = Math.cos(rad), sin = Math.sin(rad);
+  const ids = [...new Set([...State.multiSelected, ...(State.selected ? [State.selected] : [])])];
 
   State.elements.forEach(el => {
-    if (ids.includes(el.id)) {
-      // 1. Rotate the position [x, y] around group center [cx, cy]
-      const dx = el.x - bounds.cx;
-      const dy = el.y - bounds.cy;
-      
-      el.x = bounds.cx + dx * Math.cos(rad) - dy * Math.sin(rad);
-      el.y = bounds.cy + dx * Math.sin(rad) + dy * Math.cos(rad);
+    if (!ids.includes(el.id)) return;
 
-      // 2. Update the element's own rotation angle
-      el.angle = (el.angle || 0) + rad;
+    if (el.type === 'pen') {
+      // Rotate every point around the group center
+      el.points = el.points.map(([px, py]) => {
+        const dx = px - bounds.cx, dy = py - bounds.cy;
+        return [bounds.cx + dx * cos - dy * sin,
+                bounds.cy + dx * sin + dy * cos];
+      });
+    } else {
+      // Rotate the element's visual center around the group center
+      const c  = getElementCenter(el);
+      const dx = c.x - bounds.cx, dy = c.y - bounds.cy;
+      const ncx = bounds.cx + dx * cos - dy * sin;
+      const ncy = bounds.cy + dx * sin + dy * cos;
+
+      // Recompute top-left from new center
+      if (el.type === 'player' || el.type === 'puck') {
+        el.x = ncx;
+        el.y = ncy;
+      } else {
+        el.x = ncx - (el.w ?? 0) / 2;
+        el.y = ncy - (el.h ?? 0) / 2;
+      }
+
+      // Accumulate element's own rotation angle
+      el.angle = (el.angle ?? 0) + rad;
     }
   });
 
