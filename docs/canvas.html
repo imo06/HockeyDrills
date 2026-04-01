@@ -41,13 +41,9 @@
       <button class="tool-btn active" data-tool="select"  title="Select (V)">⌖</button>
       <button class="tool-btn"        data-tool="rect"    title="Rectangle (R)">▭</button>
       <button class="tool-btn"        data-tool="ellipse" title="Ellipse (E)">◯</button>
-      <button class="tool-btn"        data-tool="line"    title="Line (L)">╱</button>
-      <button class="tool-btn"        data-tool="arrow"   title="Arrow (A)">→</button>
+      <button class="tool-btn tool-group-btn" id="group-btn-lines" title="Lines &amp; Pen">╱<span class="group-pip">▸</span></button>
       <button class="tool-btn"        data-tool="text"    title="Text (T)">T</button>
-      <button class="tool-btn"        data-tool="pen"     title="Pen (P)">✏</button>
-      <button class="tool-btn"        data-tool="pylon"   title="Pylon">▲</button>
-      <button class="tool-btn"        data-tool="net"     title="Net">🥅</button>
-      <button class="tool-btn"        data-tool="puck"    title="Puck">⚫</button>
+      <button class="tool-btn tool-group-btn" id="group-btn-equip" title="Equipment">▲<span class="group-pip">▸</span></button>
       <button class="tool-btn"        data-tool="player"  title="Place Player">🏒</button>
     </div>
 
@@ -212,6 +208,19 @@
             placeholder="Drill description — coaching points, key cues, variations…"></textarea>
 </div>
 
+<!-- ── Flyout palettes (body-level so overflow never clips them) ── -->
+<div class="tool-flyout" id="flyout-lines">
+  <button class="tool-btn flyout-item" data-tool="line"  title="Line (L)">╱ <span>Line</span></button>
+  <button class="tool-btn flyout-item" data-tool="arrow" title="Arrow (A)">→ <span>Arrow</span></button>
+  <button class="tool-btn flyout-item" data-tool="pen"   title="Pen (P)">✏ <span>Pen</span></button>
+</div>
+
+<div class="tool-flyout" id="flyout-equip">
+  <button class="tool-btn flyout-item" data-tool="pylon" title="Pylon">▲ <span>Pylon</span></button>
+  <button class="tool-btn flyout-item" data-tool="net"   title="Net">🥅 <span>Net</span></button>
+  <button class="tool-btn flyout-item" data-tool="puck"  title="Puck">⚫ <span>Puck</span></button>
+</div>
+
 <!-- ── Toast + hidden file input ────────────────────────────── -->
 <div id="toast"></div>
 <input type="file" id="file-input" accept=".json" style="display:none"/>
@@ -233,6 +242,72 @@
     initIO();
     // rAF ensures the browser has finished layout before we paint
     requestAnimationFrame(render);
+
+    // ── Flyout palette logic ─────────────────────────────────
+    const FLYOUT_MAP = {
+      'group-btn-lines': { flyoutId: 'flyout-lines', tools: ['line','arrow','pen'] },
+      'group-btn-equip': { flyoutId: 'flyout-equip', tools: ['pylon','net','puck'] },
+    };
+
+    let openFlyoutId = null;
+
+    function closeFlyout() {
+      if (openFlyoutId) {
+        document.getElementById(openFlyoutId).classList.remove('open');
+        openFlyoutId = null;
+      }
+    }
+
+    // Highlight group button when one of its sub-tools is active
+    function syncGroupBtns() {
+      Object.entries(FLYOUT_MAP).forEach(([btnId, { tools }]) => {
+        document.getElementById(btnId)
+          .classList.toggle('active', tools.includes(State.tool));
+      });
+    }
+
+    Object.entries(FLYOUT_MAP).forEach(([btnId, { flyoutId, tools }]) => {
+      const btn    = document.getElementById(btnId);
+      const flyout = document.getElementById(flyoutId);
+
+      btn.addEventListener('click', e => {
+        e.stopPropagation();
+        const alreadyOpen = openFlyoutId === flyoutId;
+        closeFlyout();
+        if (!alreadyOpen) {
+          // Position flyout using fixed coords so toolbar overflow never clips it
+          const rect = btn.getBoundingClientRect();
+          flyout.style.top  = rect.top + 'px';
+          flyout.style.left = (rect.left - flyout.offsetWidth - 6) + 'px';
+          flyout.classList.add('open');
+          // Re-measure width after display:flex kicks in (first open it may be 0)
+          requestAnimationFrame(() => {
+            flyout.style.left = (rect.left - flyout.offsetWidth - 6) + 'px';
+          });
+          openFlyoutId = flyoutId;
+        }
+      });
+
+      flyout.querySelectorAll('[data-tool]').forEach(subBtn => {
+        subBtn.addEventListener('click', e => {
+          e.stopPropagation();
+          setTool(subBtn.dataset.tool);
+          closeFlyout();
+          syncGroupBtns();
+        });
+      });
+    });
+
+    // Close flyout on any outside click
+    document.addEventListener('click', closeFlyout);
+
+    // Sync group btn highlight when keyboard shortcuts fire
+    document.addEventListener('keydown', () => setTimeout(syncGroupBtns, 0));
+
+    // Sync when top-level tool buttons are clicked
+    document.querySelectorAll('#tools > [data-tool]').forEach(btn =>
+      btn.addEventListener('click', syncGroupBtns)
+    );
   });
 </script>
 

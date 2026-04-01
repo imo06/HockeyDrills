@@ -489,7 +489,7 @@ function initKeyboard() {
 
 // ── Tool selection ───────────────────────────────────────────
 function initToolButtons() {
-  document.querySelectorAll('.tool-btn').forEach(btn => {
+  document.querySelectorAll('.tool-btn[data-tool]').forEach(btn => {
     btn.addEventListener('click', () => setTool(btn.dataset.tool));
   });
   State.selected = [];
@@ -497,7 +497,7 @@ function initToolButtons() {
 
 function setTool(t) {
   State.tool = t;
-  document.querySelectorAll('.tool-btn').forEach(btn => {
+  document.querySelectorAll('.tool-btn[data-tool]').forEach(btn => {
     btn.classList.toggle('active', btn.dataset.tool === t);
   });
   canvas.className = t === 'select' ? 'cursor-select' : t === 'text' ? 'cursor-text' : '';

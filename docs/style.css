@@ -45,7 +45,11 @@ body {
   padding:       0 12px;
   background:    var(--panel);
   border-bottom: 1px solid var(--border);
+  overflow-x:    auto;
+  overflow-y:    hidden;
+  scrollbar-width: none;        /* Firefox: hide scrollbar but keep scroll */
 }
+#top-bar::-webkit-scrollbar { display: none; }  /* Chrome/Safari: same */
 
 #logo {
   font-size:   14px;
@@ -59,7 +63,7 @@ body {
 
 #drill-title {
   flex:          1;
-  min-width:     0;
+  min-width:     120px;
   background:    transparent;
   border:        none;
   border-bottom: 1px solid transparent;
@@ -217,6 +221,30 @@ canvas.cursor-text   { cursor: text; }
   text-transform: uppercase;
   color:          var(--muted);
   white-space:    nowrap;
+}
+
+.tool-flyout {
+  position: fixed;   /* Ensures it sits on top of everything */
+  display: none;     /* Hidden by default */
+  flex-direction: column;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 4px;
+  gap: 4px;
+  z-index: 1000;     /* Higher than the canvas and toolbar */
+  box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+}
+
+.tool-flyout.open {
+  display: flex;     /* Shown when the 'open' class is added via JS */
+}
+
+.flyout-item {
+  width: 120px;      /* Give them a set width so they don't look squashed */
+  justify-content: flex-start;
+  padding: 0 10px;
+  font-size: 13px;
 }
 
 .tb-range { width: 100%; accent-color: var(--accent); }
