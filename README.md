@@ -21,3 +21,23 @@ To be able to:
 3) Create a practice as a set of drills
 
 4) Mobile use: Draw easily on a mobile device (probably a tablet), and put together practices easily
+
+# Getting started
+
+1. Download or clone the repo. 
+
+2. Install the python requirements using `pip install -r requirements.txt`
+
+3. Create the coaching list at `src/coaches.json`. This file is intended to be be private and not shared. The format should look like
+
+```json
+{
+  "allow_self_register": false,
+  "coaches": [
+      "Coach Smith",
+      "Coach Canuck"
+  ]
+}
+```
+
+4. Start the server by running `python src/main.py`
