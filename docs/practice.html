@@ -1,0 +1,920 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Practice Generator | Rink Draw</title>
+  <link rel="stylesheet" href="style.css" />
+  <style>
+    /* ── Page-specific styles (style.css variables used throughout) ── */
+
+    #practice-name {
+      flex: 1;
+      min-width: 100px;
+      background: transparent;
+      border: none;
+      border-bottom: 1px solid transparent;
+      color: var(--text);
+      font-family: inherit;
+      font-size: 16px;
+      font-weight: 700;
+      letter-spacing: .03em;
+      padding: 2px 4px;
+      outline: none;
+      transition: border-color .15s;
+    }
+    #practice-name::placeholder { color: var(--muted); font-weight: 400; font-size: 13px; }
+    #practice-name:focus        { border-bottom-color: var(--accent); }
+
+    /* ── App shell ── */
+    .pg-shell {
+      flex: 1;
+      display: flex;
+      min-height: 0;
+      overflow: hidden;
+    }
+
+    /* ── Sidebar (left) ── */
+    #pg-sidebar {
+      width: 240px;
+      flex-shrink: 0;
+      background: var(--panel);
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .sb-section {
+      padding: 10px 10px 12px;
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+    .sb-section .tb-label { display: block; margin-bottom: 7px; }
+
+    .search-wrap { position: relative; }
+    .search-wrap svg {
+      position: absolute; left: 8px; top: 50%;
+      transform: translateY(-50%);
+      color: var(--muted); pointer-events: none;
+    }
+    .search-wrap input {
+      width: 100%;
+      padding: 5px 8px 5px 28px;
+      background: var(--hover);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      color: var(--text);
+      font-family: inherit;
+      font-size: 11px;
+      outline: none;
+    }
+    .search-wrap input:focus { border-color: var(--accent); }
+    .search-wrap input::placeholder { color: var(--muted); }
+
+    .sb-input {
+      width: 100%;
+      margin-bottom: 5px;
+      background: var(--hover);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      color: var(--text);
+      font-family: inherit;
+      font-size: 11px;
+      padding: 5px 8px;
+      outline: none;
+    }
+    .sb-input:focus { border-color: var(--accent); }
+    .sb-input::placeholder { color: var(--muted); }
+
+    #drill-library {
+      flex: 1;
+      overflow-y: auto;
+      padding: 4px;
+    }
+    #drill-library::-webkit-scrollbar { width: 3px; }
+    #drill-library::-webkit-scrollbar-thumb { background: var(--border); }
+
+    .lib-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 7px 8px;
+      border-radius: 4px;
+      cursor: grab;
+      border: 1px solid transparent;
+      transition: background .1s;
+      margin-bottom: 1px;
+    }
+    .lib-item:hover  { background: var(--hover); border-color: var(--border); }
+    .lib-item:active { cursor: grabbing; opacity: .6; }
+
+    .lib-icon {
+      width: 26px; height: 26px;
+      border-radius: 3px;
+      background: var(--hover);
+      border: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 13px; flex-shrink: 0;
+    }
+
+    .lib-info { flex: 1; min-width: 0; }
+    .lib-name {
+      font-size: 11px; font-weight: 700; color: var(--text);
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .lib-desc {
+      font-size: 10px; color: var(--muted);
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+
+    .lib-add {
+      width: 20px; height: 20px;
+      background: transparent;
+      border: 1px solid var(--border);
+      border-radius: 3px;
+      color: var(--muted);
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+      opacity: 0;
+      transition: all .1s;
+      font-size: 14px; line-height: 1;
+    }
+    .lib-item:hover .lib-add { opacity: 1; }
+    .lib-add:hover { background: var(--accent); border-color: var(--accent); color: #000; }
+
+    /* ── Main ── */
+    #pg-main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+      overflow: hidden;
+    }
+
+    #pg-meta {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 0 12px;
+      height: 36px;
+      flex-shrink: 0;
+      background: var(--panel);
+      border-bottom: 1px solid var(--border);
+      overflow-x: auto;
+    }
+    #pg-meta::-webkit-scrollbar { display: none; }
+
+    .meta-field {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      flex-shrink: 0;
+    }
+    .meta-field .tb-label { margin: 0; }
+    .meta-field input {
+      background: var(--hover);
+      border: 1px solid var(--border);
+      border-radius: 3px;
+      color: var(--text);
+      font-family: inherit;
+      font-size: 11px;
+      padding: 3px 6px;
+      outline: none;
+      height: 22px;
+    }
+    .meta-field input:focus { border-color: var(--accent); }
+
+    .meta-divider { color: var(--border); flex-shrink: 0; }
+
+    .meta-stat {
+      display: flex;
+      align-items: baseline;
+      gap: 3px;
+      margin-left: auto;
+      flex-shrink: 0;
+    }
+    .meta-stat-val {
+      font-size: 14px; font-weight: 700; color: var(--accent);
+    }
+    .meta-stat-val.warn { color: #e07a35; }
+    .meta-stat-lbl { font-size: 10px; color: var(--muted); }
+
+    /* Practice list */
+    #pg-list-wrap {
+      flex: 1;
+      overflow-y: auto;
+      padding: 8px 10px;
+    }
+    #pg-list-wrap::-webkit-scrollbar { width: 3px; }
+    #pg-list-wrap::-webkit-scrollbar-thumb { background: var(--border); }
+
+    #practice-list { display: flex; flex-direction: column; gap: 3px; }
+
+    #practice-empty {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
+      gap: 10px;
+      color: var(--muted);
+      text-align: center;
+      padding: 40px;
+    }
+    #practice-empty p { font-size: 11px; max-width: 220px; line-height: 1.7; }
+
+    .practice-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 10px;
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      transition: border-color .1s;
+      animation: fadeUp .15s ease;
+    }
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(-3px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .practice-item.drag-over { border-color: var(--accent); background: var(--hover); }
+    .practice-item.dragging  { opacity: .3; }
+
+    .item-num {
+      font-size: 10px; color: var(--muted);
+      width: 14px; text-align: right; flex-shrink: 0;
+    }
+
+    .drag-handle {
+      color: var(--muted); cursor: grab; flex-shrink: 0;
+      font-size: 13px; letter-spacing: -1px; line-height: 1;
+    }
+    .drag-handle:active { cursor: grabbing; }
+
+    .item-icon {
+      width: 26px; height: 26px;
+      border-radius: 3px;
+      border: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 13px; flex-shrink: 0;
+    }
+    .item-icon.type-diagram { border-color: #ff6b3540; background: #ff6b3510; }
+    .item-icon.type-quick   { border-color: var(--border); background: var(--hover); }
+
+    .item-info { flex: 1; min-width: 0; }
+    .item-name {
+      font-size: 11px; font-weight: 700; color: var(--text);
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .item-desc {
+      font-size: 10px; color: var(--muted);
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .item-tag {
+      display: inline-block;
+      font-size: 8px; letter-spacing: .08em; text-transform: uppercase;
+      padding: 1px 5px; border-radius: 2px; margin-top: 2px;
+      border: 1px solid;
+    }
+    .tag-diagram { color: var(--accent); border-color: #ff6b3540; }
+    .tag-quick   { color: var(--muted);  border-color: var(--border); }
+
+    .item-time {
+      display: flex; align-items: center; gap: 3px; flex-shrink: 0;
+    }
+    .item-time input {
+      width: 42px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 3px;
+      color: var(--accent);
+      font-family: inherit;
+      font-size: 13px; font-weight: 700;
+      padding: 2px 4px; text-align: center; outline: none;
+    }
+    .item-time input:focus { border-color: var(--accent); }
+    .item-time-lbl { font-size: 9px; color: var(--muted); }
+
+    .item-remove {
+      width: 22px; height: 22px;
+      background: transparent; border: none; border-radius: 3px;
+      color: var(--muted); cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0; transition: all .1s; font-size: 12px;
+    }
+    .item-remove:hover { background: #e05a5a22; color: #e05a5a; }
+
+    /* Timeline bar */
+    #pg-timeline {
+      height: 34px;
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 0 12px;
+      background: var(--panel);
+      border-top: 1px solid var(--border);
+    }
+
+    #timeline-track {
+      flex: 1;
+      height: 3px;
+      background: var(--border);
+      border-radius: 2px;
+      overflow: hidden;
+    }
+    #timeline-fill {
+      height: 100%;
+      border-radius: 2px;
+      background: var(--accent);
+      transition: width .3s ease;
+    }
+    #timeline-fill.over { background: #e07a35; }
+
+    .tl-stat { font-size: 10px; color: var(--muted); white-space: nowrap; flex-shrink: 0; }
+    .tl-stat b { color: var(--text); }
+
+    /* Share modal */
+    .modal-backdrop {
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,.7);
+      z-index: 200;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .modal {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 24px;
+      width: 400px;
+      max-width: 92vw;
+    }
+    .modal h3 {
+      font-size: 11px; font-weight: 700;
+      letter-spacing: .1em; text-transform: uppercase;
+      color: var(--accent); margin-bottom: 6px;
+    }
+    .modal p { font-size: 11px; color: var(--muted); margin-bottom: 14px; line-height: 1.6; }
+    .share-row { display: flex; gap: 6px; margin-bottom: 14px; }
+    .share-row input {
+      flex: 1;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 3px;
+      color: var(--muted);
+      font-family: inherit; font-size: 10px;
+      padding: 5px 8px; outline: none;
+    }
+    .modal-footer { display: flex; justify-content: flex-end; gap: 6px; }
+
+    /* Mobile sidebar toggle */
+    #sidebar-toggle {
+      display: none;
+      width: 28px; height: 28px;
+      align-items: center; justify-content: center;
+      background: transparent;
+      border: 1px solid var(--border);
+      border-radius: 3px;
+      color: var(--muted);
+      cursor: pointer;
+      flex-shrink: 0;
+      transition: all .1s;
+    }
+    #sidebar-toggle:hover { border-color: var(--accent); color: var(--accent); }
+
+    #sidebar-backdrop {
+      display: none;
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,.65);
+      z-index: 50;
+    }
+    #sidebar-backdrop.active { display: block; }
+
+    .sb-close {
+      display: none;
+      position: absolute; top: 8px; right: 8px;
+      width: 22px; height: 22px;
+      align-items: center; justify-content: center;
+      background: var(--hover);
+      border: 1px solid var(--border);
+      border-radius: 3px;
+      color: var(--muted); cursor: pointer;
+      font-size: 12px; line-height: 1;
+    }
+    .sb-close:hover { color: var(--text); }
+
+    /* Print */
+    .print-only { display: none; }
+    @media print {
+      body { background: white; color: black; overflow: visible; }
+      #top-bar, #pg-timeline, #pg-meta, #sidebar-toggle { display: none !important; }
+      .pg-shell { display: block; height: auto; }
+      #pg-sidebar, #sidebar-backdrop { display: none !important; }
+      #pg-main { overflow: visible; }
+      #pg-list-wrap { overflow: visible; padding: 0; }
+      .practice-item { border: 1px solid #ccc; background: white; break-inside: avoid; margin-bottom: 4px; animation: none; }
+      .item-name { color: black; } .item-desc { color: #555; }
+      .item-time input { border: none; background: none; color: black; }
+      .item-remove, .drag-handle { display: none; }
+      .item-num { color: #999; }
+      .item-tag { border-color: #ccc; color: #666; }
+      .print-only { display: block; padding: 0 0 14px; }
+      .print-only h2 { font-size: 16px; margin-bottom: 3px; color: black; }
+      .print-only p  { font-size: 11px; color: #555; }
+    }
+
+    /* Responsive / mobile */
+    @media (max-width: 680px) {
+      html, body { overflow: hidden; }
+      #top-bar { padding: 0 8px; gap: 6px; }
+      #logo { font-size: 11px; }
+      #practice-name { font-size: 13px; }
+      .btn { padding: 4px 8px; font-size: 10px; }
+
+      #sidebar-toggle { display: flex; }
+
+      #pg-sidebar {
+        position: fixed;
+        top: 0; left: 0; bottom: 0;
+        z-index: 100;
+        transform: translateX(-100%);
+        transition: transform .25s cubic-bezier(.4,0,.2,1);
+        width: 260px;
+        box-shadow: 4px 0 20px rgba(0,0,0,.6);
+      }
+      #pg-sidebar.open { transform: translateX(0); }
+      .sb-close { display: flex; }
+
+      #pg-meta { height: auto; flex-wrap: wrap; padding: 7px 10px; gap: 8px; }
+      .meta-divider { display: none; }
+      .meta-stat { margin-left: 0; }
+
+      .practice-item { padding: 7px 8px; gap: 6px; }
+      .item-num { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ── Top Bar ── -->
+  <div id="top-bar">
+    <button id="sidebar-toggle" onclick="toggleSidebar()" aria-label="Toggle sidebar">
+      <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+        <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>
+      </svg>
+    </button>
+
+    <div id="logo">⬡ PRACTICE GENERATOR</div>
+
+    <input id="practice-name" type="text" placeholder="Untitled Practice…" maxlength="80" />
+
+    <div id="top-actions">
+      <a href="index.html" class="btn btn-secondary">← Hub</a>
+      <button class="btn btn-secondary" onclick="exportPDF()">PDF</button>
+      <button class="btn btn-secondary" onclick="openShareModal()">Share</button>
+      <button class="btn btn-primary" onclick="savePractice()">Save</button>
+    </div>
+  </div>
+
+  <!-- ── App Shell ── -->
+  <div class="pg-shell">
+
+    <div id="sidebar-backdrop" onclick="closeSidebar()"></div>
+
+    <!-- ── Sidebar ── -->
+    <aside id="pg-sidebar">
+      <button class="sb-close" onclick="closeSidebar()">✕</button>
+
+      <!-- Quick Drill -->
+      <div class="sb-section">
+        <span class="tb-label">Quick Drill</span>
+        <input class="sb-input" id="qd-name" type="text" placeholder="Drill name…" maxlength="60" />
+        <input class="sb-input" id="qd-desc" type="text" placeholder="One-line description…" maxlength="120" />
+        <button class="btn btn-secondary btn-full" onclick="addQuickDrill()">+ Add to Practice</button>
+      </div>
+
+      <!-- Library -->
+      <div class="sb-section">
+        <span class="tb-label">Drill Library</span>
+        <div class="search-wrap">
+          <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+          </svg>
+          <input type="text" placeholder="Search…" oninput="filterLibrary(this.value)" />
+        </div>
+      </div>
+
+      <div id="drill-library"></div>
+    </aside>
+
+    <!-- ── Main ── -->
+    <div id="pg-main">
+
+      <!-- Print-only header -->
+      <div class="print-only">
+        <h2 id="print-title">Practice Plan</h2>
+        <p id="print-meta"></p>
+      </div>
+
+      <!-- Meta strip -->
+      <div id="pg-meta">
+        <div class="meta-field">
+          <span class="tb-label">Date</span>
+          <input type="date" id="practice-date" style="width:126px;" />
+        </div>
+        <span class="meta-divider">|</span>
+        <div class="meta-field">
+          <span class="tb-label">Team</span>
+          <input type="text" id="practice-team" placeholder="e.g. U16 AA" style="width:96px;" />
+        </div>
+        <span class="meta-divider">|</span>
+        <div class="meta-field">
+          <span class="tb-label">Target</span>
+          <input type="number" id="target-duration" value="60" min="15" max="180" step="5"
+                 style="width:50px;" oninput="updateTimeline()" />
+          <span class="tb-label">min</span>
+        </div>
+        <div class="meta-stat">
+          <span class="meta-stat-val" id="total-time">00:00</span>
+          <span class="meta-stat-lbl">total</span>
+          &nbsp;<span class="meta-stat-lbl" style="color:var(--border)">|</span>&nbsp;
+          <span class="meta-stat-val" id="drill-count" style="color:var(--text)">0</span>
+          <span class="meta-stat-lbl">drills</span>
+        </div>
+      </div>
+
+      <!-- List -->
+      <div id="pg-list-wrap">
+        <div id="practice-list"></div>
+        <div id="practice-empty">
+          <svg width="32" height="32" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24" style="opacity:.25">
+            <rect x="3" y="3" width="18" height="18" rx="2"/>
+            <line x1="3" y1="9" x2="21" y2="9"/>
+            <line x1="9" y1="21" x2="9" y2="9"/>
+          </svg>
+          <p>No drills yet.<br/>Add from the library or create a quick drill.</p>
+        </div>
+      </div>
+
+      <!-- Timeline -->
+      <div id="pg-timeline">
+        <div id="timeline-track">
+          <div id="timeline-fill" style="width:0%"></div>
+        </div>
+        <span class="tl-stat"><b id="used-min">0</b> min used</span>
+        <span class="tl-stat"><b id="remaining-min">60</b> remaining</span>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Share Modal -->
+  <div class="modal-backdrop" id="share-modal" style="display:none">
+    <div class="modal">
+      <h3>Share Practice</h3>
+      <p>Copy this link to share the practice plan with other coaches.</p>
+      <div class="share-row">
+        <input id="share-url" type="text" readonly />
+        <button class="btn btn-primary" onclick="copyShareURL()">Copy</button>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="closeShareModal()">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast"></div>
+
+<script>
+// ─────────────────────────────────────────────
+//  Sidebar toggle
+// ─────────────────────────────────────────────
+function toggleSidebar() {
+  document.getElementById('pg-sidebar').classList.contains('open') ? closeSidebar() : openSidebar();
+}
+function openSidebar() {
+  document.getElementById('pg-sidebar').classList.add('open');
+  document.getElementById('sidebar-backdrop').classList.add('active');
+}
+function closeSidebar() {
+  document.getElementById('pg-sidebar').classList.remove('open');
+  document.getElementById('sidebar-backdrop').classList.remove('active');
+}
+
+// ─────────────────────────────────────────────
+//  State
+// ─────────────────────────────────────────────
+let practiceItems = [];
+let drillLibrary  = [];
+let dragSrcIdx    = null;
+let libDragId     = null;
+
+// ─────────────────────────────────────────────
+//  Mock Library  (replace with fetch('/api/drills'))
+// ─────────────────────────────────────────────
+const MOCK_DRILLS = [
+  { id:'d1',  name:'2-on-1 Rush',       desc:'Offensive zone entry drill' },
+  { id:'d2',  name:'D-to-D Breakout',   desc:'Defensemen breakout passing' },
+  { id:'d3',  name:'Regroup & Attack',  desc:'Neutral zone regroup into attack' },
+  { id:'d4',  name:'Gap Control',       desc:'Defensive gap control progression' },
+  { id:'d5',  name:'Corner Battle',     desc:'1-on-1 puck battle along boards' },
+  { id:'d6',  name:'Puck Protection',   desc:'Power position below the dots' },
+  { id:'d7',  name:'3-on-2 Cycle',      desc:'Offensive zone cycle and support' },
+  { id:'d8',  name:'Penalty Kill Box',  desc:'4-player PK shell positioning' },
+  { id:'d9',  name:'Power Play Setup',  desc:'5-on-4 umbrella formation entry' },
+  { id:'d10', name:'Skating Edges',     desc:'Edge work and crossover warmup' },
+];
+
+// ─────────────────────────────────────────────
+//  Init
+// ─────────────────────────────────────────────
+function init() {
+  drillLibrary = MOCK_DRILLS;
+  renderLibrary();
+  loadFromURL();
+  document.getElementById('practice-date').value = new Date().toISOString().slice(0, 10);
+  updateEmpty();
+  updateTimeline();
+}
+
+// ─────────────────────────────────────────────
+//  Library
+// ─────────────────────────────────────────────
+function renderLibrary(filter = '') {
+  const el    = document.getElementById('drill-library');
+  const f     = filter.toLowerCase();
+  const items = drillLibrary.filter(d =>
+    !f || d.name.toLowerCase().includes(f) || d.desc.toLowerCase().includes(f)
+  );
+
+  if (!items.length) {
+    el.innerHTML = `<div style="padding:20px;text-align:center;font-size:10px;color:var(--muted)">No drills found</div>`;
+    return;
+  }
+
+  el.innerHTML = items.map(d => `
+    <div class="lib-item" draggable="true"
+         ondragstart="libDragStart(event,'${d.id}')"
+         onclick="addFromLibrary('${d.id}')">
+      <div class="lib-icon">🏒</div>
+      <div class="lib-info">
+        <div class="lib-name">${esc(d.name)}</div>
+        <div class="lib-desc">${esc(d.desc)}</div>
+      </div>
+      <button class="lib-add" onclick="event.stopPropagation();addFromLibrary('${d.id}')" title="Add">+</button>
+    </div>
+  `).join('');
+}
+
+function filterLibrary(val) { renderLibrary(val); }
+
+function addFromLibrary(id) {
+  const d = drillLibrary.find(x => x.id === id);
+  if (!d) return;
+  practiceItems.push({ id: uid(), sourceId: d.id, name: d.name, desc: d.desc, type: 'diagram', duration: 10 });
+  renderList();
+  showToast('Added: ' + d.name);
+  if (window.innerWidth <= 680) closeSidebar();
+}
+
+// ─────────────────────────────────────────────
+//  Quick Drill
+// ─────────────────────────────────────────────
+function addQuickDrill() {
+  const name = document.getElementById('qd-name').value.trim();
+  const desc = document.getElementById('qd-desc').value.trim();
+  if (!name) { showToast('Enter a drill name', true); return; }
+  practiceItems.push({ id: uid(), name, desc, type: 'quick', duration: 5 });
+  renderList();
+  document.getElementById('qd-name').value = '';
+  document.getElementById('qd-desc').value = '';
+  showToast('Quick drill added');
+  if (window.innerWidth <= 680) closeSidebar();
+}
+
+// ─────────────────────────────────────────────
+//  Practice List
+// ─────────────────────────────────────────────
+function renderList() {
+  updateEmpty();
+  document.getElementById('practice-list').innerHTML = practiceItems.map((item, i) => `
+    <div class="practice-item" id="pi-${item.id}"
+         draggable="true"
+         ondragstart="itemDragStart(event,${i})"
+         ondragover="itemDragOver(event,${i})"
+         ondragleave="itemDragLeave(event,${i})"
+         ondrop="itemDrop(event,${i})"
+         ondragend="itemDragEnd()">
+      <div class="item-num">${i+1}</div>
+      <div class="drag-handle" title="Drag to reorder">⠿</div>
+      <div class="item-icon ${item.type === 'diagram' ? 'type-diagram' : 'type-quick'}">
+        ${item.type === 'diagram' ? '🏒' : '📝'}
+      </div>
+      <div class="item-info">
+        <div class="item-name">${esc(item.name)}</div>
+        ${item.desc ? `<div class="item-desc">${esc(item.desc)}</div>` : ''}
+        <span class="item-tag ${item.type === 'diagram' ? 'tag-diagram' : 'tag-quick'}">
+          ${item.type === 'diagram' ? 'Diagram' : 'Quick'}
+        </span>
+      </div>
+      <div class="item-time">
+        <input type="number" min="1" max="120" value="${item.duration}"
+               onchange="setDuration('${item.id}',this.value)"
+               oninput="setDuration('${item.id}',this.value)"
+               title="Duration in minutes" />
+        <span class="item-time-lbl">min</span>
+      </div>
+      <button class="item-remove" onclick="removeItem('${item.id}')" title="Remove">✕</button>
+    </div>
+  `).join('');
+
+  updateTimeline();
+}
+
+function updateEmpty() {
+  document.getElementById('practice-empty').style.display = practiceItems.length ? 'none' : 'flex';
+}
+
+function removeItem(id) {
+  practiceItems = practiceItems.filter(x => x.id !== id);
+  renderList();
+}
+
+function setDuration(id, val) {
+  const item = practiceItems.find(x => x.id === id);
+  if (item) item.duration = Math.max(1, parseInt(val) || 1);
+  updateTimeline();
+}
+
+// ─────────────────────────────────────────────
+//  Timeline
+// ─────────────────────────────────────────────
+function updateTimeline() {
+  const total  = practiceItems.reduce((s, x) => s + (x.duration || 0), 0);
+  const target = parseInt(document.getElementById('target-duration').value) || 60;
+  const pct    = Math.min((total / target) * 100, 100);
+  const remain = Math.max(target - total, 0);
+  const over   = total > target;
+
+  const mm = String(Math.floor(total / 60)).padStart(2, '0');
+  const ss = String(total % 60).padStart(2, '0');
+
+  document.getElementById('total-time').textContent    = `${mm}:${ss}`;
+  document.getElementById('total-time').className      = 'meta-stat-val' + (over ? ' warn' : '');
+  document.getElementById('drill-count').textContent   = practiceItems.length;
+  document.getElementById('used-min').textContent      = total;
+  document.getElementById('remaining-min').textContent = remain;
+
+  const fill = document.getElementById('timeline-fill');
+  fill.style.width = pct + '%';
+  fill.className   = 'timeline-fill' + (over ? ' over' : '');
+}
+
+// ─────────────────────────────────────────────
+//  Drag & Drop
+// ─────────────────────────────────────────────
+function libDragStart(e, id) {
+  libDragId = id;
+  e.dataTransfer.effectAllowed = 'copy';
+}
+
+function itemDragStart(e, idx) {
+  dragSrcIdx = idx;
+  e.dataTransfer.effectAllowed = 'move';
+  setTimeout(() => {
+    const el = document.getElementById('pi-' + practiceItems[idx].id);
+    if (el) el.classList.add('dragging');
+  }, 0);
+}
+
+function itemDragOver(e, idx) {
+  e.preventDefault();
+  e.dataTransfer.dropEffect = libDragId ? 'copy' : 'move';
+  document.querySelectorAll('.practice-item').forEach(el => el.classList.remove('drag-over'));
+  const el = document.getElementById('pi-' + practiceItems[idx].id);
+  if (el) el.classList.add('drag-over');
+}
+
+function itemDragLeave(e, idx) {
+  const el = document.getElementById('pi-' + practiceItems[idx].id);
+  if (el) el.classList.remove('drag-over');
+}
+
+function itemDrop(e, idx) {
+  e.preventDefault();
+  document.querySelectorAll('.practice-item').forEach(el => el.classList.remove('drag-over', 'dragging'));
+
+  if (libDragId !== null) {
+    const d = drillLibrary.find(x => x.id === libDragId);
+    if (d) {
+      practiceItems.splice(idx, 0, { id: uid(), sourceId: d.id, name: d.name, desc: d.desc, type: 'diagram', duration: 10 });
+      renderList();
+      showToast('Added: ' + d.name);
+    }
+    libDragId = null;
+    return;
+  }
+
+  if (dragSrcIdx === null || dragSrcIdx === idx) return;
+  const [moved] = practiceItems.splice(dragSrcIdx, 1);
+  practiceItems.splice(idx, 0, moved);
+  dragSrcIdx = null;
+  renderList();
+}
+
+function itemDragEnd() {
+  document.querySelectorAll('.practice-item').forEach(el => el.classList.remove('dragging', 'drag-over'));
+  libDragId = null;
+  dragSrcIdx = null;
+}
+
+// ─────────────────────────────────────────────
+//  Save / Share / PDF
+// ─────────────────────────────────────────────
+function getPracticeData() {
+  return {
+    name:   document.getElementById('practice-name').value || 'Untitled Practice',
+    date:   document.getElementById('practice-date').value,
+    team:   document.getElementById('practice-team').value,
+    target: parseInt(document.getElementById('target-duration').value) || 60,
+    items:  practiceItems,
+  };
+}
+
+function savePractice() {
+  // TODO: POST /api/practices
+  localStorage.setItem('hdl_last_practice', JSON.stringify({ id: 'practice_' + Date.now(), ...getPracticeData() }));
+  showToast('Practice saved!');
+}
+
+function openShareModal() {
+  const enc = btoa(encodeURIComponent(JSON.stringify(getPracticeData())));
+  document.getElementById('share-url').value = `${location.origin}${location.pathname}?plan=${enc}`;
+  document.getElementById('share-modal').style.display = 'flex';
+}
+function closeShareModal() { document.getElementById('share-modal').style.display = 'none'; }
+function copyShareURL() {
+  navigator.clipboard.writeText(document.getElementById('share-url').value)
+    .then(() => { showToast('Link copied!'); closeShareModal(); });
+}
+
+function loadFromURL() {
+  const plan = new URLSearchParams(location.search).get('plan');
+  if (!plan) return;
+  try {
+    const data = JSON.parse(decodeURIComponent(atob(plan)));
+    document.getElementById('practice-name').value   = data.name   || '';
+    document.getElementById('practice-date').value   = data.date   || '';
+    document.getElementById('practice-team').value   = data.team   || '';
+    document.getElementById('target-duration').value = data.target || 60;
+    practiceItems = data.items || [];
+    renderList();
+    showToast('Practice loaded from link');
+  } catch (e) { showToast('Could not load from link', true); }
+}
+
+function exportPDF() {
+  const data = getPracticeData();
+  document.getElementById('print-title').textContent = data.name;
+  document.getElementById('print-meta').textContent  =
+    [data.date, data.team, `Target: ${data.target} min`,
+     `Total: ${practiceItems.reduce((s, x) => s + x.duration, 0)} min`]
+    .filter(Boolean).join('  ·  ');
+  window.print();
+}
+
+// ─────────────────────────────────────────────
+//  Toast  (uses #toast from style.css)
+// ─────────────────────────────────────────────
+let toastTimer;
+function showToast(msg, isErr = false) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className = 'show' + (isErr ? ' err' : '');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => { el.className = ''; }, 2800);
+}
+
+// ─────────────────────────────────────────────
+//  Helpers
+// ─────────────────────────────────────────────
+function uid() { return Math.random().toString(36).slice(2, 10); }
+function esc(s) {
+  return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+document.getElementById('share-modal').addEventListener('click', function(e) {
+  if (e.target === this) closeShareModal();
+});
+document.getElementById('qd-desc').addEventListener('keydown', e => {
+  if (e.key === 'Enter') addQuickDrill();
+});
+
+init();
+</script>
+</body>
+</html>
