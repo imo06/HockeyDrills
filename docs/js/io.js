@@ -1,12 +1,38 @@
 // ─────────────────────────────────────────────────────────────
 //  io.js  —  save / load drill JSON
-//  Saves go to the FastAPI backend at API_BASE, which writes
-//  them into HockeyDrills/drills/ on disk.
 // ─────────────────────────────────────────────────────────────
 
 const API_BASE = 'http://localhost:8000';
 
+// ─────────────────────────────────────────────────────────────
+//  Coach identity — stored in localStorage, set via top-bar input
+// ─────────────────────────────────────────────────────────────
+
+function getCoach() {
+  return (localStorage.getItem('drillLab:coach') || '').trim();
+}
+
+function initCoachField() {
+  const input = document.getElementById('coach-name');
+  if (!input) return;
+
+  // Pre-fill from storage
+  input.value = getCoach();
+
+  // Persist on every change
+  input.addEventListener('input', () => {
+    localStorage.setItem('drillLab:coach', input.value.trim());
+  });
+}
+
+
+// ─────────────────────────────────────────────────────────────
+//  Init
+// ─────────────────────────────────────────────────────────────
+
 function initIO() {
+  initCoachField();
+
   document.getElementById('btn-save').addEventListener('click', saveJSON);
   document.getElementById('btn-load').addEventListener('click', () => {
     document.getElementById('file-input').click();
@@ -174,8 +200,13 @@ function saveJSON() {
   const { scene, slug } = buildScene();
   const blob = new Blob([JSON.stringify(scene, null, 2)], { type: 'application/json' });
   const url  = URL.createObjectURL(blob);
-  Object.assign(document.createElement('a'), { href: url, download: `${slug}.json` }).click();
-  URL.revokeObjectURL(url);
+  const a    = document.createElement('a');
+  a.href     = url;
+  a.download = `${slug}.json`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
   showToast('✓ Scene exported as JSON');
 }
 
@@ -202,16 +233,24 @@ async function loadJSON(e) {
 // ─────────────────────────────────────────────────────────────
 
 async function saveToServer() {
+  const coach = getCoach();
+  if (!coach) {
+    showToast('✗ Enter your coach name in the top bar first', true);
+    document.getElementById('coach-name')?.focus();
+    return;
+  }
+
   const { scene } = buildScene();
+
   try {
     const res = await fetch(`${API_BASE}/save-drill`, {
       method:  'POST',
       headers: { 'Content-Type': 'application/json' },
-      body:    JSON.stringify(scene),
+      body:    JSON.stringify({ coach, scene }),
     });
     if (!res.ok) throw new Error(`Server returned ${res.status}`);
-    const { filename } = await res.json();
-    showToast(`✓ Saved to drills/${filename}`);
+    const { message } = await res.json();
+    showToast(`✓ ${message}`);
   } catch (err) {
     showToast('✗ Could not reach server: ' + err.message, true);
   }
@@ -219,7 +258,8 @@ async function saveToServer() {
 
 
 // ─────────────────────────────────────────────────────────────
-//  Library  →  GET /list-drills, then load via GET /get-drill
+//  Library  →  GET /list-drills  (drills owned by current coach
+//              show a delete button; others show load only)
 // ─────────────────────────────────────────────────────────────
 
 async function openLibrary() {
@@ -238,7 +278,7 @@ async function openLibrary() {
   panel.style.cssText = `
     background: #1e1e2e; color: #cdd6f4;
     border-radius: 10px; padding: 24px;
-    width: 540px; max-height: 72vh;
+    width: 560px; max-height: 72vh;
     overflow-y: auto; font-family: sans-serif;
     box-shadow: 0 8px 32px rgba(0,0,0,.6);
   `;
@@ -257,16 +297,17 @@ async function openLibrary() {
   modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
   panel.querySelector('#lib-close').addEventListener('click', () => modal.remove());
 
-  // Loading state
   const status = Object.assign(document.createElement('p'), {
     textContent: 'Loading…',
     style: 'color:#6c7086;margin:0 0 12px;',
   });
   panel.insertBefore(status, closeRow);
 
+  const coach = getCoach();
+
   let drills;
   try {
-    const res = await fetch(`${API_BASE}/list-drills`);
+    const res = await fetch(`${API_BASE}/list-drills?coach=${encodeURIComponent(coach)}`);
     if (!res.ok) throw new Error(`Server returned ${res.status}`);
     ({ drills } = await res.json());
   } catch (err) {
@@ -287,13 +328,23 @@ async function openLibrary() {
     return;
   }
 
-  drills.forEach(({ filename, title, tags, savedAt }) => {
+  drills.forEach(({ id, title, tags, saved_at, is_mine }) => {
     const card = document.createElement('div');
     card.style.cssText = `
       background: #313244; border-radius: 6px; padding: 12px 14px;
       margin-bottom: 10px;
       display: flex; justify-content: space-between; align-items: center; gap: 12px;
     `;
+
+    // Delete button only appears for drills this coach owns.
+    // No coach names are shown anywhere in the UI.
+    const deleteBtn = is_mine
+      ? `<button class="lib-btn-del"
+           style="background:#f38ba8;color:#1e1e2e;border:none;border-radius:4px;
+                  padding:6px 10px;cursor:pointer;font-size:.85rem;"
+           title="Delete your drill">✕</button>`
+      : '';
+
     card.innerHTML = `
       <div style="min-width:0;flex:1;">
         <strong style="display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
@@ -301,34 +352,32 @@ async function openLibrary() {
         </strong>
         <span style="font-size:.8em;color:#a6adc8;">
           ${tags?.length ? tags.join(', ') + ' · ' : ''}
-          ${savedAt ? new Date(savedAt).toLocaleDateString() : ''}
+          ${saved_at ? new Date(saved_at).toLocaleDateString() : ''}
         </span>
       </div>
       <div style="display:flex;gap:8px;flex-shrink:0;">
         <button class="lib-btn-load"
           style="background:#89b4fa;color:#1e1e2e;border:none;border-radius:4px;
                  padding:6px 12px;cursor:pointer;font-size:.85rem;">Load</button>
-        <button class="lib-btn-del"
-          style="background:#f38ba8;color:#1e1e2e;border:none;border-radius:4px;
-                 padding:6px 10px;cursor:pointer;font-size:.85rem;"
-          title="Delete from disk">✕</button>
+        ${deleteBtn}
       </div>
     `;
 
     card.querySelector('.lib-btn-load').addEventListener('click', async () => {
-      await loadFromServer(filename);
+      await loadFromServer(id, title);
       modal.remove();
     });
 
-    card.querySelector('.lib-btn-del').addEventListener('click', async () => {
-      if (!confirm(`Delete "${title}" from disk?`)) return;
+    card.querySelector('.lib-btn-del')?.addEventListener('click', async () => {
+      if (!confirm(`Delete "${title}"? This cannot be undone.`)) return;
       try {
-        const res = await fetch(`${API_BASE}/delete-drill/${encodeURIComponent(filename)}`, {
-          method: 'DELETE',
-        });
+        const res = await fetch(
+          `${API_BASE}/delete-drill/${id}?coach=${encodeURIComponent(coach)}`,
+          { method: 'DELETE' }
+        );
         if (!res.ok) throw new Error(`Server returned ${res.status}`);
         card.remove();
-        showToast(`Deleted ${filename}`);
+        showToast(`Deleted "${title}"`);
       } catch (err) {
         showToast('✗ Could not delete: ' + err.message, true);
       }
@@ -338,12 +387,12 @@ async function openLibrary() {
   });
 }
 
-async function loadFromServer(filename) {
+async function loadFromServer(id, title) {
   try {
-    const res = await fetch(`${API_BASE}/get-drill/${encodeURIComponent(filename)}`);
+    const res = await fetch(`${API_BASE}/get-drill/${id}`);
     if (!res.ok) throw new Error(`Server returned ${res.status}`);
     applySceneData(await res.json());
-    showToast(`✓ Loaded: ${filename}`);
+    showToast(`✓ Loaded: ${title}`);
   } catch (err) {
     showToast('✗ Could not load: ' + err.message, true);
   }

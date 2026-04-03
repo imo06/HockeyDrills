@@ -5,10 +5,31 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Drill Lab Canvas</title>
   <link rel="stylesheet" href="style.css"/>
+  <style>
+    #coach-indicator {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      color: var(--muted);
+      white-space: nowrap;
+    }
+    #coach-indicator strong {
+      color: var(--text);
+    }
+    #coach-indicator a {
+      color: var(--accent);
+      text-decoration: underline;
+      font-size: 12px;
+    }
+    #coach-indicator.unset strong {
+      color: #f38ba8;  /* red-ish warning */
+    }
+  </style>
 </head>
 <body>
 
-<!-- ── Top bar: title + action buttons ──────────────────────── -->
+<!-- ── Top bar ───────────────────────────────────────────────── -->
 <div id="top-bar">
   <span id="logo">🏒 Drill Lab Canvas</span>
   <input type="text" id="drill-title"
@@ -19,25 +40,27 @@
     <button class="btn btn-toggle" id="btn-toggle">◑ Half Rink</button>
     <button class="btn btn-secondary" id="btn-load">Load JSON</button>
     <button class="btn btn-primary"   id="btn-save">Save JSON ↓</button>
-    <button class="btn btn-primary"   id="btn-save-local">💾 Save Local</button>
+    <button class="btn btn-primary"   id="btn-save-local">💾 Save</button>
     <button class="btn btn-secondary" id="btn-library">📂 Library</button>
     <button class="btn btn-danger"    id="btn-clear">✕ Clear</button>
   </div>
+  <!-- Read-only coach indicator; editing happens on the home page -->
+  <div id="coach-indicator">
+    Saving as: <strong id="coach-indicator-name">—</strong>
+    <a href="index.html" title="Change coach on the home page">Change</a>
+  </div>
 </div>
 
-<!-- ── Main row: canvas (left, flex) + toolbar (right, fixed) ── -->
+<!-- ── Main row ──────────────────────────────────────────────── -->
 <div id="main-row">
 
-  <!-- Canvas area -->
   <div id="canvas-wrap">
     <div id="rink-layer"></div>
     <canvas id="c"></canvas>
-  </div><!-- /canvas-wrap -->
+  </div>
 
-  <!-- Right toolbar (vertical) -->
   <div id="toolbar">
 
-    <!-- Tool buttons: 2-column grid -->
     <div id="tools">
       <button class="tool-btn active" data-tool="select"  title="Select (V)">⌖</button>
       <button class="tool-btn"        data-tool="rect"    title="Rectangle (R)">▭</button>
@@ -50,7 +73,6 @@
 
     <div class="tb-sep"></div>
 
-    <!-- Player type + size -->
     <div class="tb-group">
       <span class="tb-label">Player type</span>
       <select id="player-type">
@@ -76,7 +98,6 @@
 
     <div class="tb-sep"></div>
 
-    <!-- Stroke / fill -->
     <div class="tb-group">
       <span class="tb-label">Stroke</span>
       <input type="color" id="stroke-color" value="#000000"/>
@@ -97,7 +118,6 @@
 
     <div class="tb-sep"></div>
 
-    <!-- Line style -->
     <div class="tb-group">
       <span class="tb-label">Line style</span>
       <select id="line-style">
@@ -110,16 +130,11 @@
 
     <div class="tb-sep"></div>
 
-    <button class="btn btn-danger btn-full" id="btn-del"
-            title="Delete selected (Del)">✕ Delete</button>
-    <button class="btn btn-secondary btn-full" id="btn-dup"
-            title="Duplicate selected (Ctrl+D)">⧉ Duplicate</button>
-    <button class="btn btn-secondary btn-full" id="btn-undo"
-            title="Undo (Ctrl+Z)" disabled>↩ Undo</button>
-    <button class="btn btn-secondary btn-full" id="btn-redo"
-            title="Redo (Ctrl+Shift+Z)" disabled>↪ Redo</button>
+    <button class="btn btn-danger btn-full"    id="btn-del"  title="Delete selected (Del)">✕ Delete</button>
+    <button class="btn btn-secondary btn-full" id="btn-dup"  title="Duplicate selected (Ctrl+D)">⧉ Duplicate</button>
+    <button class="btn btn-secondary btn-full" id="btn-undo" title="Undo (Ctrl+Z)" disabled>↩ Undo</button>
+    <button class="btn btn-secondary btn-full" id="btn-redo" title="Redo (Ctrl+Shift+Z)" disabled>↪ Redo</button>
 
-    <!-- Selected-element properties (shown only when something is selected) -->
     <div id="props">
       <div class="tb-sep" style="margin:0 -8px 6px;"></div>
       <h3>Selected</h3>
@@ -169,47 +184,37 @@
           <option value="wiggle">〜 Wiggle</option>
         </select>
       </div>
-      <!-- In your selection properties panel -->
       <label>
         Sub
-        <input
-          id="prop-subscript"
-          type="text"
-          maxlength="2"
-          placeholder="—"
-          style="width: 2.5em; text-align: center;"
-        />
+        <input id="prop-subscript" type="text" maxlength="2"
+               placeholder="—" style="width:2.5em;text-align:center;"/>
       </label>
     </div>
 
-    <!-- Group toolbar -->
-  <div id="group-props" class="prop-group" style="display: none;">
-    <span class="tb-label">Group Actions</span>
-    <div class="tool-grid">
-      <button class="btn btn-secondary" id="btn-group-flip-h" title="Flip Horizontal (Ctrl+H)">↔ Flip</button>
-      <button class="btn btn-secondary" id="btn-group-flip-v" title="Flip Vertical (Ctrl+V)">↕ Flip</button>
-      <button class="btn btn-secondary" id="btn-group-rotate" title="Rotate 90° (Ctrl+R)">↻ Rotate</button>
+    <div id="group-props" class="prop-group" style="display:none;">
+      <span class="tb-label">Group Actions</span>
+      <div class="tool-grid">
+        <button class="btn btn-secondary" id="btn-group-flip-h" title="Flip Horizontal (Ctrl+H)">↔ Flip</button>
+        <button class="btn btn-secondary" id="btn-group-flip-v" title="Flip Vertical (Ctrl+V)">↕ Flip</button>
+        <button class="btn btn-secondary" id="btn-group-rotate" title="Rotate 90° (Ctrl+R)">↻ Rotate</button>
+      </div>
     </div>
-  </div>
-  </div><!-- /Group toolbar -->
+
+  </div><!-- /toolbar -->
 
 </div><!-- /main-row -->
 
-<!-- ── Tags: single line under the canvas ───────────────────── -->
 <div id="tags-row">
   <span class="tb-label">Tags</span>
-  <input type="text" id="drill-tags"
-         placeholder="breakout; forecheck; 2-on-1"/>
+  <input type="text" id="drill-tags" placeholder="breakout; forecheck; 2-on-1"/>
   <span class="meta-hint">(semicolon separated)</span>
 </div>
 
-<!-- ── Description: big box at the bottom ───────────────────── -->
 <div id="desc-row">
   <textarea id="drill-desc"
             placeholder="Drill description — coaching points, key cues, variations…"></textarea>
 </div>
 
-<!-- ── Flyout palettes (body-level so overflow never clips them) ── -->
 <div class="tool-flyout" id="flyout-lines">
   <button class="tool-btn flyout-item" data-tool="line"  title="Line (L)">╱ <span>Line</span></button>
   <button class="tool-btn flyout-item" data-tool="arrow" title="Arrow (A)">→ <span>Arrow</span></button>
@@ -222,11 +227,9 @@
   <button class="tool-btn flyout-item" data-tool="puck"  title="Puck">⚫ <span>Puck</span></button>
 </div>
 
-<!-- ── Toast + hidden file input ────────────────────────────── -->
 <div id="toast"></div>
 <input type="file" id="file-input" accept=".json" style="display:none"/>
 
-<!-- ── Scripts ───────────────────────────────────────────────── -->
 <script src="js/state.js"></script>
 <script src="js/toast.js"></script>
 <script src="js/rink.js"></script>
@@ -235,16 +238,31 @@
 <script src="js/interaction.js"></script>
 <script src="js/io.js"></script>
 <script>
+  // ── Coach indicator (read-only on this page) ───────────────
+  function initCoachIndicator() {
+    const name = localStorage.getItem('drillLab:coach') || '';
+    const el   = document.getElementById('coach-indicator');
+    const span = document.getElementById('coach-indicator-name');
+    if (name) {
+      span.textContent = name;
+      el.classList.remove('unset');
+    } else {
+      span.textContent = 'Not set — click Change';
+      el.classList.add('unset');
+    }
+  }
+
   window.addEventListener('DOMContentLoaded', async () => {
+    initCoachIndicator();
+
     await initRink();
     await initAssets();
-    initRenderer();     // ResizeObserver fires immediately + sizes canvas
+    initRenderer();
     initInteraction();
     initIO();
-    // rAF ensures the browser has finished layout before we paint
     requestAnimationFrame(render);
 
-    // ── Flyout palette logic ─────────────────────────────────
+    // ── Flyout palette logic ───────────────────────────────
     const FLYOUT_MAP = {
       'group-btn-lines': { flyoutId: 'flyout-lines', tools: ['line','arrow','pen'] },
       'group-btn-equip': { flyoutId: 'flyout-equip', tools: ['pylon','net','puck'] },
@@ -259,7 +277,6 @@
       }
     }
 
-    // Highlight group button when one of its sub-tools is active
     function syncGroupBtns() {
       Object.entries(FLYOUT_MAP).forEach(([btnId, { tools }]) => {
         document.getElementById(btnId)
@@ -267,7 +284,7 @@
       });
     }
 
-    Object.entries(FLYOUT_MAP).forEach(([btnId, { flyoutId, tools }]) => {
+    Object.entries(FLYOUT_MAP).forEach(([btnId, { flyoutId }]) => {
       const btn    = document.getElementById(btnId);
       const flyout = document.getElementById(flyoutId);
 
@@ -276,12 +293,10 @@
         const alreadyOpen = openFlyoutId === flyoutId;
         closeFlyout();
         if (!alreadyOpen) {
-          // Position flyout using fixed coords so toolbar overflow never clips it
           const rect = btn.getBoundingClientRect();
           flyout.style.top  = rect.top + 'px';
           flyout.style.left = (rect.left - flyout.offsetWidth - 6) + 'px';
           flyout.classList.add('open');
-          // Re-measure width after display:flex kicks in (first open it may be 0)
           requestAnimationFrame(() => {
             flyout.style.left = (rect.left - flyout.offsetWidth - 6) + 'px';
           });
@@ -299,13 +314,8 @@
       });
     });
 
-    // Close flyout on any outside click
     document.addEventListener('click', closeFlyout);
-
-    // Sync group btn highlight when keyboard shortcuts fire
     document.addEventListener('keydown', () => setTimeout(syncGroupBtns, 0));
-
-    // Sync when top-level tool buttons are clicked
     document.querySelectorAll('#tools > [data-tool]').forEach(btn =>
       btn.addEventListener('click', syncGroupBtns)
     );

@@ -1,0 +1,8 @@
+{
+  "allow_self_register": false,
+  "coaches": [
+    "Coach Smith",
+    "Coach Jones",
+    "Coach Williams"
+  ]
+}

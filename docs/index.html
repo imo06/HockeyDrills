@@ -6,19 +6,98 @@
   <title>Hockey Drills Labs</title>
   <link rel="stylesheet" href="style.css">
   <style>
-    /* Override the canvas editor's scroll-lock for this page */
     html, body {
       height: auto !important;
       overflow: visible !important;
       display: block !important;
     }
-    /* Home-specific layout overrides */
+
+    /* ── Coach selector ───────────────────────────────────────── */
+    #coach-selector {
+      max-width: 900px;
+      margin: 32px auto 0;
+      padding: 0 20px;
+    }
+
+    #coach-banner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 16px 24px;
+    }
+
+    #coach-banner .welcome-text {
+      font-size: 15px;
+      color: var(--muted);
+    }
+
+    #coach-banner .welcome-text strong {
+      color: var(--text);
+      font-size: 17px;
+    }
+
+    #coach-banner .change-link {
+      font-size: 13px;
+      color: var(--accent);
+      cursor: pointer;
+      background: none;
+      border: none;
+      padding: 0;
+      text-decoration: underline;
+    }
+
+    /* First-visit prompt */
+    #coach-prompt {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    #coach-prompt label {
+      font-size: 15px;
+      color: var(--muted);
+      white-space: nowrap;
+    }
+
+    /* Shared styles for both dropdown and future text input */
+    #coach-input-wrap {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex: 1;
+    }
+
+    #coach-select,
+    #coach-text {
+      flex: 1;
+      min-width: 180px;
+      background: var(--bg);
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-radius: 5px;
+      padding: 8px 12px;
+      font-size: 14px;
+    }
+
+    #coach-confirm {
+      padding: 8px 18px;
+      font-size: 14px;
+      white-space: nowrap;
+    }
+
+    /* ── Rest of page ─────────────────────────────────────────── */
     .hero-section {
       max-width: 900px;
-      margin: 80px auto;
+      margin: 40px auto;
       padding: 0 20px;
       text-align: center;
     }
+
     .mission-statement {
       font-size: 18px;
       color: var(--muted);
@@ -28,11 +107,13 @@
       padding-left: 20px;
       text-align: left;
     }
+
     .hub-grid {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
       gap: 25px;
     }
+
     .hub-card {
       background: var(--panel);
       border: 1px solid var(--border);
@@ -41,81 +122,77 @@
       text-decoration: none;
       transition: transform 0.2s, border-color 0.2s;
     }
+
     .hub-card:hover {
       transform: translateY(-5px);
       border-color: var(--accent);
     }
+
     .hub-card h2 {
       color: var(--accent);
       margin-bottom: 15px;
       font-size: 22px;
     }
+
     .hub-card p {
       font-size: 14px;
       color: var(--text);
       opacity: 0.8;
     }
-    .extra-space {
-      margin-bottom: 1em; /* Adjust the value as needed (e.g., 20px, 1.5em) */
-    }
-    /* Divider to separate Hub from Motivation */
+
     .section-divider {
-    border: 0;
-    height: 1px;
-    background: linear-gradient(to right, transparent, var(--border), transparent);
-    margin: 40px auto;
-    max-width: 600px;
+      border: 0;
+      height: 1px;
+      background: linear-gradient(to right, transparent, var(--border), transparent);
+      margin: 40px auto;
+      max-width: 600px;
     }
 
     .motivation-section {
-    margin-top: 40px !important;
-    text-align: left !important; /* Makes the long text easier to read */
+      margin-top: 40px !important;
+      text-align: left !important;
     }
 
     .motivation-section h2 {
-    text-align: center;
-    color: var(--accent);
+      text-align: center;
+      color: var(--accent);
     }
 
     .values-box {
-    background: rgba(255, 255, 255, 0.03);
-    padding: 25px;
-    border-radius: 8px;
-    border: 1px solid var(--border);
-    margin: 25px 0;
+      background: rgba(255, 255, 255, 0.03);
+      padding: 25px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      margin: 25px 0;
     }
 
     .values-list {
-    margin-top: 15px;
-    list-style: none;
-    padding-left: 0;
+      margin-top: 15px;
+      list-style: none;
+      padding-left: 0;
     }
 
     .values-list li {
-    margin-bottom: 12px;
-    padding-left: 25px;
-    position: relative;
+      margin-bottom: 12px;
+      padding-left: 25px;
+      position: relative;
     }
 
     .values-list li::before {
-    content: "🏒";
-    position: absolute;
-    left: 0;
-    font-size: 14px;
+      content: "🏒";
+      position: absolute;
+      left: 0;
+      font-size: 14px;
     }
 
     .final-note {
-    font-style: italic;
-    color: var(--muted);
-    text-align: center;
-    margin-top: 30px;
+      font-style: italic;
+      color: var(--muted);
+      text-align: center;
+      margin-top: 30px;
     }
-    
-    .body {
-      overflow-y: auto;
-      height: auto;
-      min-height: 100vh;
-    }
+
+    .extra-space { margin-bottom: 1em; }
   </style>
 </head>
 <body class="scroll-layout">
@@ -124,13 +201,37 @@
     <div id="logo">⬡ HOCKEY DRILLS LAB</div>
   </header>
 
+  <!-- ── Coach identity banner ──────────────────────────────── -->
+  <div id="coach-selector">
+    <div id="coach-banner">
+
+      <!-- Shown when no coach is set yet -->
+      <div id="coach-prompt" style="width:100%;">
+        <label for="coach-input-wrap">Who are you?</label>
+        <div id="coach-input-wrap">
+          <!-- Populated by JS: dropdown (roster) or text input (self-register) -->
+        </div>
+        <button class="btn btn-primary" id="coach-confirm">Let's go →</button>
+      </div>
+
+      <!-- Shown once a coach is identified -->
+      <div id="coach-greeting" style="display:none; width:100%;
+           display:none; justify-content:space-between; align-items:center;">
+        <span class="welcome-text">Welcome back, <strong id="coach-greeting-name"></strong></span>
+        <button class="change-link" id="coach-change">Not you?</button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ── Main content ───────────────────────────────────────── -->
   <section class="hero-section">
     <h1>Coaching & Practices, Simplified.</h1>
     <div class="mission-statement">
       <p>
-        Volunteer coaching is a challenge; building an intuitive practice plan shouldn't be. 
-        Our mission is to provide amateur youth hockey mentors with free, professional-grade 
-        tools to design skills, collaborate with peers, and lead with confidence. 
+        Volunteer coaching is a challenge; building an intuitive practice plan shouldn't be.
+        Our mission is to provide amateur youth hockey mentors with free, professional-grade
+        tools to design drills, collaborate with peers, and lead with confidence.
         High impact, lightweight, and always open-source.
       </p>
     </div>
@@ -146,20 +247,6 @@
         <p><strong>Coming Soon:</strong> Transform your saved drills into a structured 60-minute practice plan tailored to your team's development goals.</p>
       </a>
     </div>
-    <div class="motivation-box">
-      <h3>Our Motivation</h3>
-      <p>Our goal is simple: <strong>Make sure the kids have enough fun that they want to play again next year.</strong></p>
-      
-      <ul class="values-list">
-        <li><strong>Perfect Effort:</strong> Give your best every single shift.</li>
-        <li><strong>Active Listening:</strong> Listen, engage, and ask questions.</li>
-        <li><strong>Supportive:</strong> Support your teammates on and off the ice.</li>
-      </ul>
-      
-      <p style="font-style: italic; opacity: 0.7; font-size: 0.9em;">
-        * This tool is non-profit. No fees should ever be charged for its use.
-      </p>
-    </div>
   </section>
 
   <hr class="section-divider">
@@ -167,25 +254,141 @@
   <section class="hero-section motivation-section">
     <h2>Our Motivation</h2>
     <p class="extra-space">
-      This tool is built by volunteers, for volunteers. We believe coaching resources should be accessible. 
-      All we ask is that this tool remains non-profit: no fees for yourself, your team, or your league. 
+      This tool is built by volunteers, for volunteers. We believe coaching resources should be accessible.
+      All we ask is that this tool remains non-profit: no fees for yourself, your team, or your league.
       Our goal is simple: <strong>Make sure the kids have enough fun that they want to play again next year.</strong>
     </p>
-    
+
     <div class="values-box">
       <p>In house leagues, ice time is precious. We focus on three core pillars for every session:</p>
       <ul class="values-list">
-          <li><strong>Relentless Effort:</strong> Give your best every single shift.</li>
-          <li><strong>Active Learning:</strong> Listen, engage, and never hesitate to ask "why."</li>
-          <li><strong>Team First:</strong> Support your teammates on and off the ice.</li>
+        <li><strong>Relentless Effort:</strong> Give your best every single shift.</li>
+        <li><strong>Active Learning:</strong> Listen, engage, and never hesitate to ask "why."</li>
+        <li><strong>Team First:</strong> Support your teammates on and off the ice.</li>
       </ul>
     </div>
-    
+
     <p class="final-note">
       We hope this makes your coaching journey more rewarding, translating into a better experience for every young player on your roster.
     </p>
   </section>
 
   <div id="toast"></div>
+
+  <script>
+    // ── Config ────────────────────────────────────────────────
+    const API_BASE    = 'http://localhost:8000';
+    const STORAGE_KEY = 'drillLab:coach';
+
+    // ── Elements ──────────────────────────────────────────────
+    const prompt      = document.getElementById('coach-prompt');
+    const greeting    = document.getElementById('coach-greeting');
+    const greetName   = document.getElementById('coach-greeting-name');
+    const inputWrap   = document.getElementById('coach-input-wrap');
+    const confirmBtn  = document.getElementById('coach-confirm');
+    const changeBtn   = document.getElementById('coach-change');
+
+    // ── Roster fetch & UI build ───────────────────────────────
+    async function initCoachUI() {
+      const stored = localStorage.getItem(STORAGE_KEY) || '';
+
+      let cfg = { allow_self_register: false, coaches: [] };
+      try {
+        const res = await fetch(`${API_BASE}/coaches`);
+        if (res.ok) cfg = await res.json();
+      } catch {
+        // Server unreachable — fall back gracefully to self-register
+        cfg.allow_self_register = true;
+      }
+
+      buildInput(cfg);
+
+      if (stored) {
+        showGreeting(stored);
+      } else {
+        showPrompt();
+      }
+    }
+
+    /**
+     * Builds either a <select> (fixed roster) or <input type="text">
+     * (self-register) inside #coach-input-wrap.
+     *
+     * To switch modes in the future, flip allow_self_register in
+     * coaches.json — no JS changes needed.
+     */
+    function buildInput(cfg) {
+      inputWrap.innerHTML = '';
+
+      if (cfg.allow_self_register) {
+        // ── Future: free-text entry ───────────────────────────
+        const input   = document.createElement('input');
+        input.type    = 'text';
+        input.id      = 'coach-text';
+        input.placeholder = 'Your name';
+        input.autocomplete = 'off';
+        input.addEventListener('keydown', e => {
+          if (e.key === 'Enter') confirmCoach();
+        });
+        inputWrap.appendChild(input);
+      } else {
+        // ── Now: dropdown from roster ─────────────────────────
+        const select  = document.createElement('select');
+        select.id     = 'coach-select';
+
+        const blank   = document.createElement('option');
+        blank.value   = '';
+        blank.textContent = '— Select your name —';
+        blank.disabled = true;
+        blank.selected = true;
+        select.appendChild(blank);
+
+        cfg.coaches.forEach(name => {
+          const opt = document.createElement('option');
+          opt.value = name;
+          opt.textContent = name;
+          select.appendChild(opt);
+        });
+
+        inputWrap.appendChild(select);
+      }
+    }
+
+    function getInputValue() {
+      const sel  = document.getElementById('coach-select');
+      const text = document.getElementById('coach-text');
+      return (sel?.value || text?.value || '').trim();
+    }
+
+    function confirmCoach() {
+      const name = getInputValue();
+      if (!name) return;
+      localStorage.setItem(STORAGE_KEY, name);
+      showGreeting(name);
+    }
+
+    function showGreeting(name) {
+      greetName.textContent = name;
+      prompt.style.display   = 'none';
+      greeting.style.display = 'flex';
+    }
+
+    function showPrompt() {
+      prompt.style.display   = 'flex';
+      greeting.style.display = 'none';
+    }
+
+    // ── Events ────────────────────────────────────────────────
+    confirmBtn.addEventListener('click', confirmCoach);
+
+    changeBtn.addEventListener('click', () => {
+      localStorage.removeItem(STORAGE_KEY);
+      showPrompt();
+    });
+
+    // ── Boot ──────────────────────────────────────────────────
+    initCoachUI();
+  </script>
+
 </body>
 </html>
