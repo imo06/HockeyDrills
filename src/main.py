@@ -2,7 +2,7 @@ from fastapi import FastAPI, HTTPException, Request, Query
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from sqlmodel import Field, Session, SQLModel, create_engine, select
-from sqlalchemy import UniqueConstraint
+from sqlalchemy import UniqueConstraint, text
 from datetime import datetime
 from typing import Optional
 import json
@@ -25,16 +25,30 @@ engine = create_engine(DATABASE_URL)
 class Drill(SQLModel, table=True):
     __table_args__ = (UniqueConstraint("coach", "slug", name="uq_coach_slug"),)
 
-    id:       Optional[int] = Field(default=None, primary_key=True)
-    coach:    str
-    slug:     str
-    title:    str
-    tags:     str      = "[]"   # JSON array stored as string
-    saved_at: datetime = Field(default_factory=datetime.utcnow)
-    scene:    str               # Full scene JSON as string
+    id:        Optional[int] = Field(default=None, primary_key=True)
+    coach:     str
+    slug:      str
+    title:     str
+    tags:      str           = "[]"   # JSON array stored as string
+    saved_at:  datetime      = Field(default_factory=datetime.utcnow)
+    scene:     str                    # Full scene JSON as string
+    thumbnail: Optional[str] = None   # base64 JPEG data-URL, generated client-side
 
 
 SQLModel.metadata.create_all(engine)
+
+
+def migrate_db():
+    """Add any columns introduced after initial table creation."""
+    with engine.connect() as conn:
+        try:
+            conn.execute(text("ALTER TABLE drill ADD COLUMN thumbnail TEXT"))
+            conn.commit()
+        except Exception:
+            pass  # Column already exists — safe to ignore
+
+
+migrate_db()
 
 # ─────────────────────────────────────────────────────────────
 #  App
@@ -49,7 +63,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# coaches.json lives next to main.py in src/
 COACHES_FILE = os.path.join(os.path.dirname(__file__), 'coaches.json')
 
 
@@ -68,11 +81,6 @@ def load_coaches() -> dict:
 
 
 def is_valid_coach(name: str) -> bool:
-    """
-    When allow_self_register is False, the name must be in the roster.
-    When True, any non-empty name is accepted.
-    This is the only place that needs to change when we add self-registration.
-    """
     cfg = load_coaches()
     if cfg.get("allow_self_register", False):
         return bool(name.strip())
@@ -85,24 +93,15 @@ def is_valid_coach(name: str) -> bool:
 
 @app.get("/coaches")
 def get_coaches():
-    """
-    Returns only the allow_self_register flag — NOT the name list.
-    The roster stays on the server so valid names are never exposed
-    to the browser. Validation still happens in is_valid_coach().
-    """
+    """Returns only the flag — coach names stay on the server."""
     cfg = load_coaches()
     return {"allow_self_register": cfg.get("allow_self_register", False)}
 
 
 @app.post("/check-coach")
 async def check_coach(request: Request):
-    """
-    Validates a coach name against the roster without side effects.
-    Returns 200 if valid, 403 if not. The roster is never sent to
-    the browser — only a pass/fail response.
-    """
-    body  = await request.json()
-    name  = (body.get("coach") or "").strip()
+    body = await request.json()
+    name = (body.get("coach") or "").strip()
     if not name or not is_valid_coach(name):
         raise HTTPException(status_code=403, detail="Coach not recognised")
     return {"ok": True}
@@ -110,9 +109,10 @@ async def check_coach(request: Request):
 
 @app.post("/save-drill")
 async def save_drill(request: Request):
-    body  = await request.json()
-    coach = (body.get('coach') or '').strip()
-    scene = body.get('scene', {})
+    body      = await request.json()
+    coach     = (body.get('coach') or '').strip()
+    scene     = body.get('scene', {})
+    thumbnail = body.get('thumbnail') or None   # base64 data-URL or None
 
     if not coach:
         raise HTTPException(status_code=400, detail="Coach name is required")
@@ -130,17 +130,19 @@ async def save_drill(request: Request):
         ).first()
 
         if existing:
-            existing.title    = title
-            existing.tags     = tags
-            existing.saved_at = datetime.utcnow()
-            existing.scene    = json.dumps(scene)
+            existing.title     = title
+            existing.tags      = tags
+            existing.saved_at  = datetime.utcnow()
+            existing.scene     = json.dumps(scene)
+            if thumbnail:
+                existing.thumbnail = thumbnail
             session.add(existing)
             session.commit()
             return {"message": f"Updated '{title}'", "id": existing.id}
         else:
             drill = Drill(
                 coach=coach, slug=slug, title=title,
-                tags=tags, scene=json.dumps(scene)
+                tags=tags, scene=json.dumps(scene), thumbnail=thumbnail
             )
             session.add(drill)
             session.commit()
@@ -150,15 +152,23 @@ async def save_drill(request: Request):
 
 @app.get("/list-drills")
 async def list_drills(coach: str = Query(default="")):
+    """
+    Returns all drills newest-first.
+    coach name is included so coaches can be credited in the library UI.
+    thumbnail is included for the hover preview.
+    is_mine controls whether the delete button appears.
+    """
     with Session(engine) as session:
         drills = session.exec(select(Drill).order_by(Drill.saved_at.desc())).all()
         return {"drills": [
             {
-                "id":       d.id,
-                "title":    d.title,
-                "tags":     json.loads(d.tags),
-                "saved_at": d.saved_at.isoformat(),
-                "is_mine":  d.coach == coach,
+                "id":        d.id,
+                "title":     d.title,
+                "coach":     d.coach,
+                "tags":      json.loads(d.tags),
+                "saved_at":  d.saved_at.isoformat(),
+                "is_mine":   d.coach == coach,
+                "thumbnail": d.thumbnail,
             }
             for d in drills
         ]}
@@ -187,8 +197,7 @@ async def delete_drill(drill_id: int, coach: str = Query(...)):
 
 
 # ─────────────────────────────────────────────────────────────
-#  Serve frontend from docs/
-#  Must be mounted AFTER all API routes.
+#  Serve frontend — must be mounted AFTER all API routes
 # ─────────────────────────────────────────────────────────────
 
 DOCS_DIR = os.path.join(os.path.dirname(__file__), '..', 'docs')

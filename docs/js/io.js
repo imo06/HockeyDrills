@@ -5,7 +5,7 @@
 const API_BASE = 'http://localhost:8000';
 
 // ─────────────────────────────────────────────────────────────
-//  Coach identity — stored in localStorage, set via top-bar input
+//  Coach identity
 // ─────────────────────────────────────────────────────────────
 
 function getCoach() {
@@ -15,14 +15,35 @@ function getCoach() {
 function initCoachField() {
   const input = document.getElementById('coach-name');
   if (!input) return;
-
-  // Pre-fill from storage
   input.value = getCoach();
-
-  // Persist on every change
   input.addEventListener('input', () => {
     localStorage.setItem('drillLab:coach', input.value.trim());
   });
+}
+
+
+// ─────────────────────────────────────────────────────────────
+//  Thumbnail — captures the canvas as a small JPEG data-URL.
+//  Drawn with a pale ice-blue background so the rink context
+//  is implied even though the rink SVG layer isn't on the canvas.
+// ─────────────────────────────────────────────────────────────
+
+function captureThumbnail() {
+  const source = document.getElementById('c');
+  if (!source || source.width === 0) return null;
+
+  const MAX_W = 280, MAX_H = 175;
+  const scale  = Math.min(MAX_W / source.width, MAX_H / source.height);
+  const thumb  = document.createElement('canvas');
+  thumb.width  = Math.round(source.width  * scale);
+  thumb.height = Math.round(source.height * scale);
+
+  const ctx = thumb.getContext('2d');
+  ctx.fillStyle = '#c8dff0';          // pale ice-blue background
+  ctx.fillRect(0, 0, thumb.width, thumb.height);
+  ctx.drawImage(source, 0, 0, thumb.width, thumb.height);
+
+  return thumb.toDataURL('image/jpeg', 0.75);
 }
 
 
@@ -193,7 +214,7 @@ function applySceneData(data) {
 
 
 // ─────────────────────────────────────────────────────────────
-//  Save JSON — browser download (no server needed)
+//  Save JSON — browser download
 // ─────────────────────────────────────────────────────────────
 
 function saveJSON() {
@@ -212,7 +233,7 @@ function saveJSON() {
 
 
 // ─────────────────────────────────────────────────────────────
-//  Load JSON — file picker (no server needed)
+//  Load JSON — file picker
 // ─────────────────────────────────────────────────────────────
 
 async function loadJSON(e) {
@@ -229,24 +250,24 @@ async function loadJSON(e) {
 
 
 // ─────────────────────────────────────────────────────────────
-//  Save to server  →  POST /save-drill
+//  Save to server
 // ─────────────────────────────────────────────────────────────
 
 async function saveToServer() {
   const coach = getCoach();
   if (!coach) {
-    showToast('✗ Enter your coach name in the top bar first', true);
-    document.getElementById('coach-name')?.focus();
+    showToast('✗ Enter your coach name on the home page first', true);
     return;
   }
 
-  const { scene } = buildScene();
+  const { scene }   = buildScene();
+  const thumbnail   = captureThumbnail();
 
   try {
     const res = await fetch(`${API_BASE}/save-drill`, {
       method:  'POST',
       headers: { 'Content-Type': 'application/json' },
-      body:    JSON.stringify({ coach, scene }),
+      body:    JSON.stringify({ coach, scene, thumbnail }),
     });
     if (!res.ok) throw new Error(`Server returned ${res.status}`);
     const { message } = await res.json();
@@ -258,13 +279,46 @@ async function saveToServer() {
 
 
 // ─────────────────────────────────────────────────────────────
-//  Library  →  GET /list-drills  (drills owned by current coach
-//              show a delete button; others show load only)
+//  Library
 // ─────────────────────────────────────────────────────────────
 
 async function openLibrary() {
   document.getElementById('drill-library')?.remove();
 
+  // Floating preview that follows the mouse
+  const preview = document.createElement('div');
+  preview.style.cssText = `
+    position: fixed; z-index: 10001; pointer-events: none;
+    display: none;
+    background: #1e1e2e;
+    border: 1px solid #45475a;
+    border-radius: 8px;
+    padding: 8px;
+    box-shadow: 0 8px 28px rgba(0,0,0,.65);
+  `;
+  const previewImg = document.createElement('img');
+  previewImg.style.cssText = 'display:block; width:280px; border-radius:4px;';
+  preview.appendChild(previewImg);
+  document.body.appendChild(preview);
+
+  function showPreview(src, e) {
+    previewImg.src        = src;
+    preview.style.display = 'block';
+    movePreview(e);
+  }
+  function movePreview(e) {
+    const gap = 16;
+    const pw  = 280 + 18;   // image + padding
+    const x   = (e.clientX + gap + pw > window.innerWidth)
+                  ? e.clientX - pw - gap
+                  : e.clientX + gap;
+    const y   = Math.min(e.clientY - 40, window.innerHeight - 220);
+    preview.style.left = x + 'px';
+    preview.style.top  = Math.max(y, 8) + 'px';
+  }
+  function hidePreview() { preview.style.display = 'none'; }
+
+  // ── Modal shell ─────────────────────────────────────────────
   const modal = document.createElement('div');
   modal.id    = 'drill-library';
   modal.style.cssText = `
@@ -278,7 +332,7 @@ async function openLibrary() {
   panel.style.cssText = `
     background: #1e1e2e; color: #cdd6f4;
     border-radius: 10px; padding: 24px;
-    width: 560px; max-height: 72vh;
+    width: 580px; max-height: 72vh;
     overflow-y: auto; font-family: sans-serif;
     box-shadow: 0 8px 32px rgba(0,0,0,.6);
   `;
@@ -294,8 +348,13 @@ async function openLibrary() {
   modal.appendChild(panel);
   document.body.appendChild(modal);
 
-  modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
-  panel.querySelector('#lib-close').addEventListener('click', () => modal.remove());
+  function closeLibrary() {
+    modal.remove();
+    preview.remove();
+  }
+
+  modal.addEventListener('click', e => { if (e.target === modal) closeLibrary(); });
+  panel.querySelector('#lib-close').addEventListener('click', closeLibrary);
 
   const status = Object.assign(document.createElement('p'), {
     textContent: 'Loading…',
@@ -320,7 +379,7 @@ async function openLibrary() {
   if (drills.length === 0) {
     panel.insertBefore(
       Object.assign(document.createElement('p'), {
-        textContent: 'No drills saved yet. Use 💾 Save Local to add one.',
+        textContent: 'No drills saved yet. Use 💾 Save to add one.',
         style: 'color:#6c7086;margin:0 0 12px;',
       }),
       closeRow
@@ -328,16 +387,18 @@ async function openLibrary() {
     return;
   }
 
-  drills.forEach(({ id, title, tags, saved_at, is_mine }) => {
+  // ── Cards ───────────────────────────────────────────────────
+  drills.forEach(({ id, title, coach: drillCoach, tags, saved_at, is_mine, thumbnail }) => {
     const card = document.createElement('div');
     card.style.cssText = `
       background: #313244; border-radius: 6px; padding: 12px 14px;
       margin-bottom: 10px;
       display: flex; justify-content: space-between; align-items: center; gap: 12px;
+      cursor: default;
     `;
 
-    // Delete button only appears for drills this coach owns.
-    // No coach names are shown anywhere in the UI.
+    const tagStr    = tags?.length ? tags.join(', ') : '—';
+    const dateStr   = saved_at ? new Date(saved_at).toLocaleDateString() : '';
     const deleteBtn = is_mine
       ? `<button class="lib-btn-del"
            style="background:#f38ba8;color:#1e1e2e;border:none;border-radius:4px;
@@ -347,12 +408,15 @@ async function openLibrary() {
 
     card.innerHTML = `
       <div style="min-width:0;flex:1;">
-        <strong style="display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+        <strong style="display:block;white-space:nowrap;overflow:hidden;
+                        text-overflow:ellipsis;margin-bottom:4px;">
           ${title}
         </strong>
-        <span style="font-size:.8em;color:#a6adc8;">
-          ${tags?.length ? tags.join(', ') + ' · ' : ''}
-          ${saved_at ? new Date(saved_at).toLocaleDateString() : ''}
+        <span style="font-size:.78em;color:#a6adc8;display:block;margin-bottom:2px;">
+          🏷 ${tagStr}
+        </span>
+        <span style="font-size:.75em;color:#6c7086;">
+          ${drillCoach} · ${dateStr}
         </span>
       </div>
       <div style="display:flex;gap:8px;flex-shrink:0;">
@@ -363,9 +427,17 @@ async function openLibrary() {
       </div>
     `;
 
+    // Hover preview
+    if (thumbnail) {
+      card.addEventListener('mouseenter', e => showPreview(thumbnail, e));
+      card.addEventListener('mousemove',  e => movePreview(e));
+      card.addEventListener('mouseleave', hidePreview);
+    }
+
     card.querySelector('.lib-btn-load').addEventListener('click', async () => {
+      hidePreview();
       await loadFromServer(id, title);
-      modal.remove();
+      closeLibrary();
     });
 
     card.querySelector('.lib-btn-del')?.addEventListener('click', async () => {
