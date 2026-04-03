@@ -1,5 +1,6 @@
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 import json
 import os
 import re
@@ -81,9 +82,9 @@ async def delete_drill(filename: str):
     return {"message": f"Deleted {filename}"}
 
 
-@app.get("/")
-def read_root():
-    return {"status": "online", "message": "Hockey Drill API is active"}
+# Serve the frontend from docs/ — must be mounted AFTER all API routes
+DOCS_DIR = os.path.join(os.path.dirname(__file__), '..', 'docs')
+app.mount("/", StaticFiles(directory=DOCS_DIR, html=True), name="static")
 
 
 if __name__ == "__main__":
