@@ -2,3 +2,4 @@
 **.venv**
 *.zip
 **drills**
+src/coaches.json
