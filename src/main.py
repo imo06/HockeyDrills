@@ -30,7 +30,7 @@ class Drill(SQLModel, table=True):
     slug:      str
     title:     str
     tags:      str           = "[]"   # JSON array stored as string
-    saved_at:  datetime      = Field(default_factory=datetime.utcnow)
+    saved_at:  datetime      = Field(default_factory=datetime.now)
     scene:     str                    # Full scene JSON as string
     thumbnail: Optional[str] = None   # base64 JPEG data-URL, generated client-side
 
