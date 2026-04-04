@@ -36,7 +36,7 @@
 
     /* ── Sidebar (left) ── */
     #pg-sidebar {
-      width: 240px;
+      width: 300px;
       flex-shrink: 0;
       background: var(--panel);
       border-right: 1px solid var(--border);
@@ -128,6 +128,31 @@
       font-size: 10px; color: var(--muted);
       white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
     }
+    .lib-tags {
+      display: flex; flex-wrap: wrap; gap: 3px; margin-top: 3px;
+    }
+    .lib-tag {
+      font-size: 9px; letter-spacing: .05em; text-transform: uppercase;
+      padding: 1px 5px; border-radius: 2px;
+      background: var(--hover); border: 1px solid var(--border);
+      color: var(--muted); white-space: nowrap;
+    }
+
+    /* Thumbnail hover preview */
+    .lib-item { position: relative; }
+    .lib-thumb-tip {
+      display: none;
+      position: fixed;
+      z-index: 500;
+      pointer-events: none;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      overflow: hidden;
+      box-shadow: 0 6px 24px rgba(0,0,0,.7);
+      width: 220px;
+    }
+    .lib-thumb-tip img { width: 100%; display: block; }
+    .lib-thumb-tip.visible { display: block; }
 
     .lib-add {
       width: 20px; height: 20px;
@@ -409,22 +434,160 @@
 
     /* Print */
     .print-only { display: none; }
+    #print-container { display: none; }
+
+    @page { size: letter portrait; margin: 13mm 14mm; }
+
     @media print {
-      body { background: white; color: black; overflow: visible; }
-      #top-bar, #pg-timeline, #pg-meta, #sidebar-toggle { display: none !important; }
-      .pg-shell { display: block; height: auto; }
-      #pg-sidebar, #sidebar-backdrop { display: none !important; }
-      #pg-main { overflow: visible; }
-      #pg-list-wrap { overflow: visible; padding: 0; }
-      .practice-item { border: 1px solid #ccc; background: white; break-inside: avoid; margin-bottom: 4px; animation: none; }
-      .item-name { color: black; } .item-desc { color: #555; }
-      .item-time input { border: none; background: none; color: black; }
-      .item-remove, .drag-handle { display: none; }
-      .item-num { color: #999; }
-      .item-tag { border-color: #ccc; color: #666; }
-      .print-only { display: block; padding: 0 0 14px; }
-      .print-only h2 { font-size: 16px; margin-bottom: 3px; color: black; }
-      .print-only p  { font-size: 11px; color: #555; }
+      body > * { display: none !important; }
+
+      #print-container {
+        display: block !important;
+        font-family: Arial, Helvetica, sans-serif;
+        font-size: 9.5pt;
+        color: #111;
+        background: white;
+      }
+
+      /* ── Page header ── */
+      .pc-page-header {
+        border-bottom: 2.5pt solid #1e3a5f;
+        padding-bottom: 6pt;
+        margin-bottom: 8pt;
+      }
+      .pc-page-header h1 {
+        font-size: 20pt;
+        font-weight: 700;
+        color: #1e3a5f;
+        margin: 0 0 3pt;
+        letter-spacing: -.01em;
+      }
+      .pc-meta-row {
+        font-size: 8.5pt;
+        color: #444;
+        display: table;
+        width: 100%;
+      }
+      .pc-meta-row span { display: table-cell; }
+      .pc-meta-row span + span { padding-left: 18pt; }
+      .pc-meta-lbl { font-weight: 700; color: #1e3a5f; }
+
+      /* ── Summary table ── */
+      .pc-summary {
+        width: 100%;
+        border-collapse: collapse;
+        margin-bottom: 10pt;
+        font-size: 8.5pt;
+      }
+      .pc-summary thead tr {
+        background: #1e3a5f;
+        color: white;
+      }
+      .pc-summary thead th {
+        padding: 4pt 7pt;
+        text-align: left;
+        font-weight: 700;
+        letter-spacing: .03em;
+      }
+      .pc-summary thead th:last-child { text-align: right; }
+      .pc-summary tbody tr { border-bottom: 1pt solid #e8e8e8; }
+      .pc-summary tbody tr:nth-child(even) { background: #f6f8fb; }
+      .pc-summary tbody td { padding: 3.5pt 7pt; vertical-align: middle; }
+      .pc-summary tbody td:last-child { text-align: right; font-weight: 700; white-space: nowrap; }
+      .pc-summary-num  { color: #999; width: 16pt; }
+      .pc-summary-name { font-weight: 700; }
+      .pc-summary-tag  {
+        display: inline-block;
+        font-size: 7pt; text-transform: uppercase; letter-spacing: .04em;
+        padding: 0pt 4pt; border: 1pt solid #b0bec5; border-radius: 2pt;
+        color: #546e7a; margin-right: 2pt;
+      }
+      .pc-summary-quick { color: #888; font-style: italic; }
+
+      /* ── Section label above drill cards ── */
+      .pc-section-label {
+        font-size: 7.5pt;
+        font-weight: 700;
+        letter-spacing: .1em;
+        text-transform: uppercase;
+        color: #888;
+        border-bottom: 1pt solid #ddd;
+        padding-bottom: 2pt;
+        margin-bottom: 6pt;
+      }
+
+      /* ── Drill card ── */
+      .pc-drill {
+        border: 1pt solid #d0d8e0;
+        border-radius: 3pt;
+        margin-bottom: 7pt;
+        break-inside: avoid;
+        page-break-inside: avoid;
+        overflow: hidden;
+      }
+
+      /* Bar: dark blue, white text */
+      .pc-drill-bar {
+        background: #1e3a5f;
+        color: white;
+        padding: 5pt 8pt;
+        display: table;
+        width: 100%;
+        box-sizing: border-box;
+      }
+      .pc-drill-bar-left  { display: table-cell; vertical-align: middle; }
+      .pc-drill-bar-right { display: table-cell; vertical-align: middle; text-align: right; white-space: nowrap; }
+      .pc-drill-num  { font-size: 8pt; opacity: .6; margin-right: 5pt; }
+      .pc-drill-title { font-size: 11pt; font-weight: 700; }
+      .pc-drill-tag {
+        display: inline-block;
+        font-size: 7pt; text-transform: uppercase; letter-spacing: .04em;
+        padding: 0pt 4pt; border: 1pt solid rgba(255,255,255,.4);
+        border-radius: 2pt; color: rgba(255,255,255,.85);
+        margin-left: 4pt; vertical-align: middle;
+      }
+      .pc-drill-time { font-size: 10pt; font-weight: 700; }
+      .pc-drill-time-lbl { font-size: 7.5pt; opacity: .7; margin-left: 2pt; }
+
+      /* Body — table layout for rock-solid cross-browser print */
+      .pc-drill-body { display: table; width: 100%; }
+
+      .pc-drill-img-cell {
+        display: table-cell;
+        width: 92mm;
+        padding: 5pt;
+        background: #f7f9fb;
+        border-right: 1pt solid #d0d8e0;
+        vertical-align: middle;
+        text-align: center;
+      }
+      .pc-drill-img-cell img {
+        max-width: 90mm;
+        max-height: 68mm;
+        width: auto;
+        height: auto;
+        display: block;
+        margin: 0 auto;
+      }
+      .pc-no-img {
+        font-size: 8pt; color: #bbb;
+        padding: 20pt 0;
+        font-style: italic;
+      }
+
+      .pc-drill-desc-cell {
+        display: table-cell;
+        vertical-align: top;
+        padding: 7pt 9pt;
+        font-size: 9pt;
+        line-height: 1.65;
+        color: #222;
+      }
+      .pc-drill-desc-cell p { margin: 0 0 5pt; }
+
+      /* Quick drills — no image column */
+      .pc-drill.quick .pc-drill-img-cell { display: none; }
+      .pc-drill.quick .pc-drill-desc-cell { width: 100%; }
     }
 
     /* Responsive / mobile */
@@ -443,7 +606,7 @@
         z-index: 100;
         transform: translateX(-100%);
         transition: transform .25s cubic-bezier(.4,0,.2,1);
-        width: 260px;
+        width: 300px;
         box-shadow: 4px 0 20px rgba(0,0,0,.6);
       }
       #pg-sidebar.open { transform: translateX(0); }
@@ -514,8 +677,8 @@
     <!-- ── Main ── -->
     <div id="pg-main">
 
-      <!-- Print-only header -->
-      <div class="print-only">
+      <!-- Print-only header (legacy, unused) -->
+      <div class="print-only" style="display:none">
         <h2 id="print-title">Practice Plan</h2>
         <p id="print-meta"></p>
       </div>
@@ -586,6 +749,9 @@
       </div>
     </div>
   </div>
+
+  <!-- Rich print container — populated by exportPDF() -->
+  <div id="print-container"></div>
 
   <div id="toast"></div>
 
@@ -669,7 +835,7 @@ function renderLibrary(filter = '') {
   const items = drillLibrary.filter(d =>
     !f ||
     d.name.toLowerCase().includes(f) ||
-    d.desc.toLowerCase().includes(f) ||
+    (d.tags || []).some(t => t.toLowerCase().includes(f)) ||
     (d.coach || '').toLowerCase().includes(f)
   );
 
@@ -680,17 +846,25 @@ function renderLibrary(filter = '') {
 
   el.innerHTML = items.map(d => {
     const iconHtml = d.thumbnail
-      ? `<img src="${d.thumbnail}" style="width:26px;height:26px;object-fit:cover;border-radius:3px;display:block;" />`
+      ? `<img src="${d.thumbnail}" style="width:36px;height:36px;object-fit:cover;border-radius:3px;display:block;" />`
       : `🏒`;
-    const coachLabel = d.coach ? `<span style="color:var(--muted);font-size:9px">${esc(d.coach)}</span>` : '';
+    const iconStyle = d.thumbnail ? 'width:38px;height:38px;padding:0;overflow:hidden;' : '';
+    const tagPills  = (d.tags || []).map(t =>
+      `<span class="lib-tag">${esc(t)}</span>`
+    ).join('');
+    const coachTxt  = d.coach ? `<span style="font-size:9px;color:var(--muted)">${esc(d.coach)}</span>` : '';
+    const hasTip    = d.thumbnail ? 'data-thumb="true"' : '';
     return `
-      <div class="lib-item" draggable="true"
+      <div class="lib-item" draggable="true" ${hasTip}
            ondragstart="libDragStart(event,${d.id})"
-           onclick="addFromLibrary(${d.id})">
-        <div class="lib-icon" style="${d.thumbnail ? 'padding:0;overflow:hidden;' : ''}">${iconHtml}</div>
+           onclick="addFromLibrary(${d.id})"
+           onmouseenter="showThumbTip(event,${d.id})"
+           onmousemove="moveThumbTip(event)"
+           onmouseleave="hideThumbTip()">
+        <div class="lib-icon" style="${iconStyle}">${iconHtml}</div>
         <div class="lib-info">
-          <div class="lib-name">${esc(d.name)}</div>
-          <div class="lib-desc">${d.desc ? esc(d.desc) : ''} ${coachLabel}</div>
+          <div class="lib-name">${esc(d.name)} ${coachTxt}</div>
+          <div class="lib-tags">${tagPills}</div>
         </div>
         <button class="lib-add" onclick="event.stopPropagation();addFromLibrary(${d.id})" title="Add">+</button>
       </div>`;
@@ -699,13 +873,24 @@ function renderLibrary(filter = '') {
 
 function filterLibrary(val) { renderLibrary(val); }
 
-function addFromLibrary(id) {
-  // id may arrive as number (from API) — use == for loose match
+async function addFromLibrary(id) {
   const d = drillLibrary.find(x => x.id == id);
   if (!d) return;
+
+  // Fetch full scene to get the description from metadata
+  let desc = '';
+  try {
+    const res  = await fetch(`/get-drill/${d.id}`);
+    if (res.ok) {
+      const scene = await res.json();
+      desc = scene?.metadata?.description || scene?.description || '';
+    }
+  } catch (_) { /* fall through — no description */ }
+
   practiceItems.push({
     id: uid(), sourceId: d.id, name: d.name,
-    desc: d.desc, type: 'diagram', duration: 10,
+    desc, tags: d.tags || [], thumbnail: d.thumbnail || null,
+    type: 'diagram', duration: 10,
   });
   renderList();
   showToast('Added: ' + d.name);
@@ -842,7 +1027,7 @@ function itemDrop(e, idx) {
   if (libDragId !== null) {
     const d = drillLibrary.find(x => x.id == libDragId);
     if (d) {
-      practiceItems.splice(idx, 0, { id: uid(), sourceId: d.id, name: d.name, desc: d.desc, type: 'diagram', duration: 10 });
+      practiceItems.splice(idx, 0, { id: uid(), sourceId: d.id, name: d.name, desc: d.desc, tags: d.tags || [], thumbnail: d.thumbnail || null, type: 'diagram', duration: 10 });
       renderList();
       showToast('Added: ' + d.name);
     }
@@ -909,13 +1094,138 @@ function loadFromURL() {
 }
 
 function exportPDF() {
-  const data = getPracticeData();
-  document.getElementById('print-title').textContent = data.name;
-  document.getElementById('print-meta').textContent  =
-    [data.date, data.team, `Target: ${data.target} min`,
-     `Total: ${practiceItems.reduce((s, x) => s + x.duration, 0)} min`]
-    .filter(Boolean).join('  ·  ');
+  const data  = getPracticeData();
+  const total = practiceItems.reduce((s, x) => s + x.duration, 0);
+
+  // ── Page header ──
+  const metaCells = [
+    data.date ? `<span><span class="pc-meta-lbl">Date:</span> ${esc(data.date)}</span>` : '',
+    data.team ? `<span><span class="pc-meta-lbl">Team:</span> ${esc(data.team)}</span>` : '',
+    `<span><span class="pc-meta-lbl">Duration:</span> ${total} min</span>`,
+    `<span><span class="pc-meta-lbl">Target:</span> ${data.target} min</span>`,
+  ].filter(Boolean).join('');
+
+  const pageHeader = `
+    <div class="pc-page-header">
+      <h1>${esc(data.name)}</h1>
+      <div class="pc-meta-row">${metaCells}</div>
+    </div>`;
+
+  // ── Summary table ──
+  const summaryRows = practiceItems.map((item, i) => {
+    const tags = (item.tags || []).map(t =>
+      `<span class="pc-summary-tag">${esc(t)}</span>`).join('');
+    const typeLabel = item.type === 'quick'
+      ? `<span class="pc-summary-quick">Quick drill</span>` : tags;
+    return `<tr>
+      <td class="pc-summary-num">${i + 1}</td>
+      <td class="pc-summary-name">${esc(item.name)}</td>
+      <td>${typeLabel}</td>
+      <td>${item.duration} min</td>
+    </tr>`;
+  }).join('');
+
+  const summaryTable = `
+    <table class="pc-summary">
+      <thead><tr>
+        <th>#</th><th>Drill</th><th>Tags</th><th>Duration</th>
+      </tr></thead>
+      <tbody>${summaryRows}</tbody>
+    </table>`;
+
+  // ── Drill cards ──
+  const drillCards = practiceItems.map((item, i) => {
+    const tagPills = (item.tags || []).map(t =>
+      `<span class="pc-drill-tag">${esc(t)}</span>`).join('');
+
+    const bar = `
+      <div class="pc-drill-bar">
+        <div class="pc-drill-bar-left">
+          <span class="pc-drill-num">${i + 1}.</span>
+          <span class="pc-drill-title">${esc(item.name)}</span>
+          ${tagPills}
+        </div>
+        <div class="pc-drill-bar-right">
+          <span class="pc-drill-time">${item.duration}</span>
+          <span class="pc-drill-time-lbl">min</span>
+        </div>
+      </div>`;
+
+    // Image cell (diagram drills only)
+    const imgCell = item.type === 'diagram' ? `
+      <td class="pc-drill-img-cell">
+        ${item.thumbnail
+          ? `<img src="${item.thumbnail}" alt="${esc(item.name)}" />`
+          : `<div class="pc-no-img">No diagram saved</div>`}
+      </td>` : '';
+
+    // Description cell — render line breaks as <br>
+    const descHtml = item.desc
+      ? item.desc.split(/\n|<br>/i).map(l => `<p>${esc(l)}</p>`).join('')
+      : `<p style="color:#aaa;font-style:italic">No description provided.</p>`;
+
+    const descCell = `<td class="pc-drill-desc-cell">${descHtml}</td>`;
+
+    const body = `
+      <table class="pc-drill-body">
+        <tr>${imgCell}${descCell}</tr>
+      </table>`;
+
+    return `
+      <div class="pc-drill ${item.type === 'quick' ? 'quick' : ''}">
+        ${bar}${body}
+      </div>`;
+  }).join('');
+
+  document.getElementById('print-container').innerHTML =
+    pageHeader + summaryTable +
+    `<div class="pc-section-label">Drill Details</div>` +
+    drillCards;
+
   window.print();
+
+  setTimeout(() => {
+    document.getElementById('print-container').innerHTML = '';
+  }, 1200);
+}
+
+// ─────────────────────────────────────────────
+//  Thumbnail hover preview
+// ─────────────────────────────────────────────
+let thumbTip = null;
+
+function getThumbTip() {
+  if (!thumbTip) {
+    thumbTip = document.createElement('div');
+    thumbTip.className = 'lib-thumb-tip';
+    thumbTip.innerHTML = '<img />';
+    document.body.appendChild(thumbTip);
+  }
+  return thumbTip;
+}
+
+function showThumbTip(e, id) {
+  const d = drillLibrary.find(x => x.id == id);
+  if (!d || !d.thumbnail) return;
+  const tip = getThumbTip();
+  tip.querySelector('img').src = d.thumbnail;
+  tip.classList.add('visible');
+  moveThumbTip(e);
+}
+
+function moveThumbTip(e) {
+  if (!thumbTip || !thumbTip.classList.contains('visible')) return;
+  const gap = 12;
+  const tw  = 220;
+  const x   = e.clientX + gap + tw > window.innerWidth
+              ? e.clientX - tw - gap : e.clientX + gap;
+  const y   = Math.min(e.clientY - 20, window.innerHeight - thumbTip.offsetHeight - 8);
+  thumbTip.style.left = x + 'px';
+  thumbTip.style.top  = y + 'px';
+}
+
+function hideThumbTip() {
+  if (thumbTip) thumbTip.classList.remove('visible');
 }
 
 // ─────────────────────────────────────────────
