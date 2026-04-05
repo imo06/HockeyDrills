@@ -161,7 +161,7 @@
                spellcheck="false"/>
         <input id="coach-pin" type="password" placeholder="PIN" maxlength="6" autocomplete="off" spellcheck="false"/>
         <button class="btn btn-primary" id="coach-confirm">Let's go →</button>
-        <span id="coach-error">Name not recognised — please try again.</span>
+        <span id="coach-error">Name / pin combination not recognised — please try again.</span>
       </div>
 
       <!-- Return visit: welcome back -->
@@ -273,31 +273,30 @@
 
     async function confirmCoach() {
       const name = textInput.value.trim();
-      if (!name) return;
+      const pin  = document.getElementById('coach-pin').value.trim();
+      if (!name || !pin) return;
 
       errorEl.style.display = 'none';
       confirmBtn.disabled   = true;
       confirmBtn.textContent = 'Checking…';
 
       try {
-        // Validate by attempting a lightweight check:
-        // POST to /save-drill would be too destructive for a check,
-        // so we use a dedicated /check-coach endpoint.
-        const res = await fetch(`${API_BASE}/check-coach`, {
+        const res = await fetch(`${API_BASE}/login`, {
           method:  'POST',
           headers: { 'Content-Type': 'application/json' },
-          body:    JSON.stringify({ coach: name }),
+          body:    JSON.stringify({ name, pin }),
         });
 
         if (res.ok) {
-          localStorage.setItem(STORAGE_KEY, name);
-          showGreeting(name);
+          const { coach } = await res.json();
+          localStorage.setItem(STORAGE_KEY, coach);
+          showGreeting(coach);
         } else {
           errorEl.style.display = 'inline';
           textInput.select();
         }
       } catch {
-        // Server unreachable — accept anyway so the page isn't broken locally
+        // Server unreachable — skip auth locally
         localStorage.setItem(STORAGE_KEY, name);
         showGreeting(name);
       } finally {
@@ -308,6 +307,9 @@
 
     confirmBtn.addEventListener('click', confirmCoach);
     textInput.addEventListener('keydown', e => {
+      if (e.key === 'Enter') confirmCoach();
+    });
+    document.getElementById('coach-pin').addEventListener('keydown', e => {
       if (e.key === 'Enter') confirmCoach();
     });
     changeBtn.addEventListener('click', () => {

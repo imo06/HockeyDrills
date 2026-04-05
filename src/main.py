@@ -98,12 +98,21 @@ class LoginRequest(BaseModel):
     name: str
     pin:  str
 
-def is_valid_coach(req : LoginRequest) -> bool:
+def is_valid_coach(req: LoginRequest) -> bool:
+    """Full name + PIN check used at login."""
     cfg = load_coaches()
     if cfg.get("allow_self_register", False):
         return bool(req.name.strip())
     coaches = cfg.get("coaches", {})
-    return req.name in coaches and cfg["coaches"][req.name] == req.pin.strip()
+    return req.name in coaches and coaches[req.name] == req.pin.strip()
+
+
+def coach_exists(name: str) -> bool:
+    """Name-only check used by save/delete — PIN already verified at login."""
+    cfg = load_coaches()
+    if cfg.get("allow_self_register", False):
+        return bool(name)
+    return name in cfg.get("coaches", {})
 
 
 # ─────────────────────────────────────────────────────────────
@@ -116,14 +125,6 @@ def get_coaches():
     cfg = load_coaches()
     return {"allow_self_register": cfg.get("allow_self_register", False)}
 
-
-@app.post("/check-coach")
-async def check_coach(request: Request):
-    body = await request.json()
-    name = (body.get("coach") or "").strip()
-    if not name or not is_valid_coach(name):
-        raise HTTPException(status_code=403, detail="Coach not recognised")
-    return {"ok": True}
 
 @app.post("/login")
 def login(req: LoginRequest):
@@ -141,7 +142,7 @@ async def save_drill(request: Request):
 
     if not coach:
         raise HTTPException(status_code=400, detail="Coach name is required")
-    if not is_valid_coach(coach):
+    if not coach_exists(coach):
         raise HTTPException(status_code=403, detail="Coach not recognised")
 
     meta  = scene.get('metadata', {})
@@ -227,7 +228,7 @@ async def save_practice(request: Request):
     coach = (body.get('coach') or '').strip()
     if not coach:
         raise HTTPException(status_code=400, detail="Coach name is required")
-    if not is_valid_coach(coach):
+    if not coach_exists(coach):
         raise HTTPException(status_code=403, detail="Coach not recognised")
 
     name   = (body.get('name') or 'Untitled Practice').strip()
