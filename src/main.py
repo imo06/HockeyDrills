@@ -5,6 +5,7 @@ from sqlmodel import Field, Session, SQLModel, create_engine, select
 from sqlalchemy import UniqueConstraint, text
 from datetime import datetime
 from typing import Optional
+from pydantic import BaseModel
 import json
 import os
 import re
@@ -91,14 +92,18 @@ def load_coaches() -> dict:
         with open(COACHES_FILE) as f:
             return json.load(f)
     except FileNotFoundError:
-        return {"allow_self_register": False, "coaches": []}
+        return {"allow_self_register": False, "coaches": []} 
 
+class LoginRequest(BaseModel):
+    name: str
+    pin:  str
 
-def is_valid_coach(name: str) -> bool:
+def is_valid_coach(req : LoginRequest) -> bool:
     cfg = load_coaches()
     if cfg.get("allow_self_register", False):
-        return bool(name.strip())
-    return name.strip() in cfg.get("coaches", [])
+        return bool(req.name.strip())
+    coaches = cfg.get("coaches", {})
+    return req.name in coaches and cfg["coaches"][req.name] == req.pin.strip()
 
 
 # ─────────────────────────────────────────────────────────────
@@ -119,6 +124,12 @@ async def check_coach(request: Request):
     if not name or not is_valid_coach(name):
         raise HTTPException(status_code=403, detail="Coach not recognised")
     return {"ok": True}
+
+@app.post("/login")
+def login(req: LoginRequest):
+    if not is_valid_coach(req):
+        raise HTTPException(status_code=401, detail="Invalid name or PIN")
+    return {"coach": req.name}
 
 
 @app.post("/save-drill")
