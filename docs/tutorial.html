@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>How to Use | Hockey Drill Labs</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    html, body {
+      height: auto !important;
+      overflow: visible !important;
+      display: block !important;
+    }
+    .btn-lab { 
+      background: #d00000; /* Racing Red */
+      color: #ffffff;
+      font-size: 14px;
+      font-weight: 800;
+      border: 1px solid #ff4d4d;
+    }
+    .btn-lab:hover {
+      background: #9d0000;
+    }
+    /* Tutorial Specific Styles */
+    .tutorial-container {
+      max-width: 900px;
+      margin: 40px auto;
+      padding: 0 20px;
+      color: var(--text);
+    }
+
+    .tut-section {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 30px;
+      margin-bottom: 30px;
+    }
+
+    .tut-header {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+      margin-bottom: 20px;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 15px;
+    }
+
+    .tut-header h2 {
+      color: var(--accent);
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+    }
+
+    .step-list {
+      list-style: none;
+      padding: 0;
+    }
+
+    .step-item {
+      display: flex;
+      gap: 15px;
+      margin-bottom: 20px;
+    }
+
+    .step-number {
+      background: var(--accent);
+      color: #000;
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 900;
+      flex-shrink: 0;
+    }
+
+    .step-content h3 {
+      font-size: 16px;
+      margin-bottom: 5px;
+      color: var(--text);
+    }
+
+    .step-content p {
+      font-size: 14px;
+      color: var(--muted);
+      line-height: 1.6;
+    }
+
+    kbd {
+      background: #333;
+      border-radius: 3px;
+      border: 1px solid #555;
+      color: #fff;
+      display: inline-block;
+      font-size: 11px;
+      font-weight: bold;
+      padding: 2px 6px;
+      white-space: nowrap;
+    }
+
+    .back-nav {
+      margin-bottom: 20px;
+    }
+  </style>
+</head>
+<body class="scroll-layout">
+
+  <div class="tutorial-container">
+    <div class="back-nav">
+      <a href="index.html" class="btn btn-lab">← Back to Lab</a>
+    </div>
+
+    <header class="hero-section" style="margin-top: 0;">
+      <h1 style="font-size: 42px; color: var(--accent);">USER GUIDE</h1>
+      <p class="header-subtitle">Mastering the Drill & Practice Labs</p>
+    </header>
+
+    <section class="tut-section">
+      <div class="tut-header">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#ff6b35" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+          <line x1="3" y1="9" x2="21" y2="9"></line>
+          <line x1="9" y1="21" x2="9" y2="9"></line>
+        </svg>
+        <h2>Drills Lab Canvas</h2>
+      </div>
+
+      <div class="step-list">
+        <div class="step-item">
+          <div class="step-number">1</div>
+          <div class="step-content">
+            <h3>Set Your Rink</h3>
+            <p>Use the <strong>◑ Half Rink</strong> toggle in the right sidebar to switch between full-ice and zone-specific drills.</p>
+          </div>
+        </div>
+        <div class="step-item">
+          <div class="step-number">2</div>
+          <div class="step-content">
+            <h3>Draw & Place</h3>
+            <p>Select tools and icons from the right toolbar. Use the <strong>Select (⌖)</strong> tool to move icons, or use the Line and Path tools to map out player movement and puck flow.</p>
+          </div>
+        </div>
+        <div class="step-item">
+          <div class="step-number">3</div>
+          <div class="step-content">
+            <h3>Describe & Keys</h3>
+            <p>Write the drill descriptions and use the <strong>TAGS</strong> to categorize drills and search for them later.</p>
+          </div>
+        </div>
+        <div class="step-item">
+          <div class="step-number">4</div>
+          <div class="step-content">
+            <h3>Save Your Work</h3>
+            <p>Press <kbd>Ctrl</kbd> + <kbd>S</kbd> (or <kbd>Cmd</kbd> + <kbd>S</kbd>) to save to the cloud immediately. Use <strong>JSON ↓</strong> to download a backup of your drill file.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="tut-section">
+      <div class="tut-header">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#ff6b35" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path>
+          <rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect>
+          <line x1="8" y1="11" x2="16" y2="11"></line>
+          <line x1="8" y1="16" x2="16" y2="16"></line>
+        </svg>
+        <h2>Practice Lab</h2>
+      </div>
+
+      <div class="step-list">
+        <div class="step-item">
+          <div class="step-number">1</div>
+          <div class="step-content">
+            <h3>Build Your Drill Sequence</h3>
+            <p>Search for saved drills in the sidebar and click <strong>Add</strong> to move them into your 60-minute timeline. Use the 
+            <strong>Quick Drill</strong> to add drills without pictures.</p>
+          </div>
+        </div>
+        <div class="step-item">
+          <div class="step-number">2</div>
+          <div class="step-content">
+            <h3>Adjust Timing</h3>
+            <p>Update the duration for each drill. The generator will track your total practice time to ensure you stay within your ice slot.</p>
+          </div>
+        </div>
+        <div class="step-item">
+          <div class="step-number">3</div>
+          <div class="step-content">
+            <h3>Share with Coaches</h3>
+            <p>Use the <strong>Share</strong> button to generate a link or export a summary for your assistant coaches and players.</p>
+          </div>
+        </div>
+        <div class="step-item">
+          <div class="step-number">4</div>
+          <div class="step-content">
+            <h3>Export to PDF</h3>
+            <p>Use the <strong>PDF ↓</strong> button to download your practice as a PDF, ready to be used on-ice!</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </div>
+
+</body>
+</html>
