@@ -396,6 +396,26 @@
     }
     .modal-footer { display: flex; justify-content: flex-end; gap: 6px; }
 
+    .load-item {
+      display: flex; align-items: center; gap: 10px;
+      padding: 8px 10px; border-radius: 4px; cursor: pointer;
+      border: 1px solid transparent; margin-bottom: 2px;
+      transition: background .1s;
+    }
+    .load-item:hover { background: var(--hover); border-color: var(--border); }
+    .load-item-info { flex: 1; min-width: 0; }
+    .load-item-name { font-size: 11px; font-weight: 700; color: var(--text); }
+    .load-item-meta { font-size: 10px; color: var(--muted); margin-top: 1px; }
+    .load-item-del {
+      width: 22px; height: 22px; flex-shrink: 0;
+      background: transparent; border: none; border-radius: 3px;
+      color: var(--muted); cursor: pointer; font-size: 12px;
+      display: flex; align-items: center; justify-content: center;
+      transition: all .1s; opacity: 0;
+    }
+    .load-item:hover .load-item-del { opacity: 1; }
+    .load-item-del:hover { background: #e05a5a22; color: #e05a5a; }
+
     /* Mobile sidebar toggle */
     #sidebar-toggle {
       display: none;
@@ -640,9 +660,13 @@
 
     <div id="top-actions">
       <a href="index.html" class="btn btn-secondary">← Hub</a>
+      <button class="btn btn-secondary" onclick="openLoadModal()">Load</button>
       <button class="btn btn-secondary" onclick="exportPDF()">PDF</button>
       <button class="btn btn-secondary" onclick="openShareModal()">Share</button>
       <button class="btn btn-primary" onclick="savePractice()">Save</button>
+      <div id="coach-indicator">
+        Saving as: <strong id="coach-indicator-name">—</strong>
+      </div>
     </div>
   </div>
 
@@ -743,12 +767,36 @@
     </div>
   </div>
 
+    <div class="modal-backdrop" id="load-modal" style="display:none">
+    <div class="modal" style="width:500px;">
+      <h3>Load Practice</h3>
+      <p>Select a saved practice to load. Your current plan will be replaced.</p>
+      <div id="load-list" style="max-height:320px;overflow-y:auto;margin-bottom:14px;"></div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="closeLoadModal()">Cancel</button>
+      </div>
+    </div>
+  </div>
+
   <div id="print-container"></div>
 
 
   <div id="toast"></div>
 
 <script>
+// ── Coach indicator (read-only on this page) ───────────────
+function initCoachIndicator() {
+  const name = localStorage.getItem('drillLab:coach') || '';
+  const el   = document.getElementById('coach-indicator');
+  const span = document.getElementById('coach-indicator-name');
+  if (name) {
+    span.textContent = name;
+    el.classList.remove('unset');
+  } else {
+    span.textContent = 'Not set — click Change';
+    el.classList.add('unset');
+  }
+}
 // ─────────────────────────────────────────────
 //  Sidebar toggle
 // ─────────────────────────────────────────────
@@ -775,12 +823,17 @@ let libDragId     = null;
 // ─────────────────────────────────────────────
 //  Coach (read from localStorage — same key as canvas editor)
 // ─────────────────────────────────────────────
-const coach = localStorage.getItem('coach') || '';
+// const coach = localStorage.getItem('coach') || '';
+function getCoach() {
+  return (localStorage.getItem('drillLab:coach') || '').trim();
+}
+const coach = getCoach();
 
 // ─────────────────────────────────────────────
 //  Init
 // ─────────────────────────────────────────────
 async function init() {
+  initCoachIndicator();
   document.getElementById('practice-date').value = new Date().toISOString().slice(0, 10);
   loadFromURL();
   updateEmpty();
@@ -796,7 +849,7 @@ async function fetchDrills() {
   el.innerHTML = `<div style="padding:20px;text-align:center;font-size:10px;color:var(--muted)">Loading\u2026</div>`;
 
   try {
-    const params = coach ? `?coach=${encodeURIComponent(coach)}` : '';
+    const params = getCoach() ? `?coach=${encodeURIComponent(coach)}` : '';
     const res    = await fetch(`/list-drills${params}`);
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const data = await res.json();
@@ -1057,9 +1110,100 @@ function getPracticeData() {
   };
 }
 
-function savePractice() {
-  localStorage.setItem('hdl_last_practice', JSON.stringify({ id: 'practice_' + Date.now(), ...getPracticeData() }));
-  showToast('Practice saved!');
+async function savePractice() {
+  const coach = getCoach();
+  if (!coach) { showToast('No coach name set — log in from the Hub first', true); return; }
+  const data = getPracticeData();
+  try {
+    const res = await fetch('/save-practice', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ coach, ...data }),
+    });
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.detail || `HTTP ${res.status}`);
+    showToast(json.message || 'Practice saved!');
+  } catch (err) {
+    showToast('Save failed: ' + err.message, true);
+  }
+}
+
+// ─────────────────────────────────────────────
+//  Load Practice modal
+// ─────────────────────────────────────────────
+async function openLoadModal() {
+  document.getElementById('load-modal').style.display = 'flex';
+  const el = document.getElementById('load-list');
+  el.innerHTML = `<div style="padding:20px;text-align:center;font-size:10px;color:var(--muted)">Loading…</div>`;
+  try {
+    const params = coach ? `?coach=${encodeURIComponent(coach)}` : '';
+    const res  = await fetch(`/list-practices${params}`);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    const list = data.practices || [];
+    if (!list.length) {
+      el.innerHTML = `<div style="padding:20px;text-align:center;font-size:10px;color:var(--muted)">No saved practices found.</div>`;
+      return;
+    }
+    el.innerHTML = list.map(p => {
+      const meta = [
+        p.date || null,
+        p.team ? `Team: ${esc(p.team)}` : null,
+        `${p.count} drill${p.count !== 1 ? 's' : ''}`,
+        `${p.target} min target`,
+      ].filter(Boolean).join(' · ');
+      const delBtn = p.is_mine
+        ? `<button class="load-item-del" onclick="event.stopPropagation();deletePractice(${p.id},this)" title="Delete">✕</button>`
+        : '';
+      return `
+        <div class="load-item" onclick="loadPractice(${p.id})">
+          <div class="load-item-info">
+            <div class="load-item-name">${esc(p.name)}</div>
+            <div class="load-item-meta">${meta}</div>
+          </div>
+          ${delBtn}
+        </div>`;
+    }).join('');
+  } catch (err) {
+    el.innerHTML = `<div style="padding:20px;text-align:center;font-size:10px;color:#e05a5a">Could not load: ${err.message}</div>`;
+  }
+}
+
+function closeLoadModal() { document.getElementById('load-modal').style.display = 'none'; }
+
+async function loadPractice(id) {
+  try {
+    const res = await fetch(`/get-practice/${id}`);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    document.getElementById('practice-name').value   = data.name   || '';
+    document.getElementById('practice-date').value   = data.date   || '';
+    document.getElementById('practice-team').value   = data.team   || '';
+    document.getElementById('target-duration').value = data.target || 60;
+    practiceItems = data.items || [];
+    renderList();
+    closeLoadModal();
+    showToast('Loaded: ' + (data.name || 'Practice'));
+  } catch (err) {
+    showToast('Load failed: ' + err.message, true);
+  }
+}
+
+async function deletePractice(id, btn) {
+  if (!coach) return;
+  if (!confirm('Delete this practice?')) return;
+  try {
+    const res = await fetch(`/delete-practice/${id}?coach=${encodeURIComponent(coach)}`, { method: 'DELETE' });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    btn.closest('.load-item').remove();
+    showToast('Practice deleted');
+    if (!document.querySelector('#load-list .load-item')) {
+      document.getElementById('load-list').innerHTML =
+        `<div style="padding:20px;text-align:center;font-size:10px;color:var(--muted)">No saved practices found.</div>`;
+    }
+  } catch (err) {
+    showToast('Delete failed: ' + err.message, true);
+  }
 }
 
 function openShareModal() {
@@ -1230,6 +1374,9 @@ function esc(s) {
 
 document.getElementById('share-modal').addEventListener('click', function(e) {
   if (e.target === this) closeShareModal();
+});
+document.getElementById('load-modal').addEventListener('click', function(e) {
+  if (e.target === this) closeLoadModal();
 });
 document.getElementById('qd-desc').addEventListener('keydown', e => {
   if (e.key === 'Enter') addQuickDrill();

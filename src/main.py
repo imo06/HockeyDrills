@@ -35,6 +35,20 @@ class Drill(SQLModel, table=True):
     thumbnail: Optional[str] = None   # base64 JPEG data-URL, generated client-side
 
 
+class Practice(SQLModel, table=True):
+    __table_args__ = (UniqueConstraint("coach", "slug", name="uq_practice_coach_slug"),)
+
+    id:       Optional[int] = Field(default=None, primary_key=True)
+    coach:    str
+    slug:     str
+    name:     str
+    date:     str           = ""
+    team:     str           = ""
+    target:   int           = 60
+    items:    str           = "[]"   # JSON array of practice items
+    saved_at: datetime      = Field(default_factory=datetime.now)
+
+
 SQLModel.metadata.create_all(engine)
 
 
@@ -192,6 +206,95 @@ async def delete_drill(drill_id: int, coach: str = Query(...)):
         if drill.coach != coach:
             raise HTTPException(status_code=403, detail="You can only delete your own drills")
         session.delete(drill)
+        session.commit()
+        return {"message": "Deleted"}
+
+
+@app.post("/save-practice")
+async def save_practice(request: Request):
+    body  = await request.json()
+    coach = (body.get('coach') or '').strip()
+    if not coach:
+        raise HTTPException(status_code=400, detail="Coach name is required")
+    if not is_valid_coach(coach):
+        raise HTTPException(status_code=403, detail="Coach not recognised")
+
+    name   = (body.get('name') or 'Untitled Practice').strip()
+    date   = body.get('date', '')
+    team   = body.get('team', '')
+    target = int(body.get('target', 60))
+    items  = json.dumps(body.get('items', []))
+    slug   = title_to_slug(name)
+
+    with Session(engine) as session:
+        existing = session.exec(
+            select(Practice).where(Practice.coach == coach, Practice.slug == slug)
+        ).first()
+        if existing:
+            existing.name    = name
+            existing.date    = date
+            existing.team    = team
+            existing.target  = target
+            existing.items   = items
+            existing.saved_at = datetime.utcnow()
+            session.add(existing)
+            session.commit()
+            return {"message": f"Updated '{name}'", "id": existing.id}
+        else:
+            practice = Practice(coach=coach, slug=slug, name=name,
+                                date=date, team=team, target=target, items=items)
+            session.add(practice)
+            session.commit()
+            session.refresh(practice)
+            return {"message": f"Saved '{name}'", "id": practice.id}
+
+
+@app.get("/list-practices")
+async def list_practices(coach: str = Query(default="")):
+    with Session(engine) as session:
+        stmt = select(Practice).where(Practice.coach == coach).order_by(Practice.saved_at.desc()) \
+               if coach else select(Practice).order_by(Practice.saved_at.desc())
+        practices = session.exec(stmt).all()
+        return {"practices": [
+            {
+                "id":       p.id,
+                "name":     p.name,
+                "coach":    p.coach,
+                "date":     p.date,
+                "team":     p.team,
+                "target":   p.target,
+                "saved_at": p.saved_at.isoformat(),
+                "is_mine":  p.coach == coach,
+                "count":    len(json.loads(p.items)),
+            }
+            for p in practices
+        ]}
+
+
+@app.get("/get-practice/{practice_id}")
+async def get_practice(practice_id: int):
+    with Session(engine) as session:
+        practice = session.get(Practice, practice_id)
+        if not practice:
+            raise HTTPException(status_code=404, detail="Practice not found")
+        return {
+            "name":   practice.name,
+            "date":   practice.date,
+            "team":   practice.team,
+            "target": practice.target,
+            "items":  json.loads(practice.items),
+        }
+
+
+@app.delete("/delete-practice/{practice_id}")
+async def delete_practice(practice_id: int, coach: str = Query(...)):
+    with Session(engine) as session:
+        practice = session.get(Practice, practice_id)
+        if not practice:
+            raise HTTPException(status_code=404, detail="Practice not found")
+        if practice.coach != coach:
+            raise HTTPException(status_code=403, detail="You can only delete your own practices")
+        session.delete(practice)
         session.commit()
         return {"message": "Deleted"}
 
