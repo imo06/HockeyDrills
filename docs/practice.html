@@ -3,10 +3,34 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Practice Generator | Rink Draw</title>
+  <title>Practice Lab | Rink Lab</title>
   <link rel="stylesheet" href="style.css" />
   <style>
     /* ── Page-specific styles (style.css variables used throughout) ── */
+    .btn-lab { background: #0307f1;
+      color: #FFFFFF;
+      font-size: 14px;
+      border: 1px solid var(--border);
+    }
+    #coach-indicator {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      color: var(--muted);
+      white-space: nowrap;
+    }
+    #coach-indicator strong {
+      color: var(--text);
+    }
+    #coach-indicator a {
+      color: var(--accent);
+      text-decoration: underline;
+      font-size: 12px;
+    }
+    #coach-indicator.unset strong {
+      color: #f38ba8;  /* red-ish warning */
+    }
 
     #practice-name {
       flex: 1;
@@ -654,16 +678,16 @@
       </svg>
     </button>
 
-    <div id="logo">⬡ PRACTICE GENERATOR</div>
+    <a href="index.html" class="btn btn-lab">← LAB</a>
+    <div id="logo">⬡ PRACTICE LAB</div>
 
     <input id="practice-name" type="text" placeholder="Untitled Practice…" maxlength="80" />
 
     <div id="top-actions">
-      <a href="index.html" class="btn btn-secondary">← Hub</a>
-      <button class="btn btn-secondary" onclick="openLoadModal()">Load</button>
-      <button class="btn btn-secondary" onclick="exportPDF()">PDF</button>
-      <button class="btn btn-secondary" onclick="openShareModal()">Share</button>
-      <button class="btn btn-primary" onclick="savePractice()">Save</button>
+      <button class="btn btn-primary" onclick="savePractice()">💾 Save</button>
+      <button class="btn btn-primary" onclick="openLoadModal()">📂 Library</button>
+      <button class="btn btn-outline" onclick="exportPDF()">PDF</button>
+      <button class="btn btn-outline" onclick="openShareModal()">Share</button>
       <div id="coach-indicator">
         Saving as: <strong id="coach-indicator-name">—</strong>
       </div>
@@ -784,6 +808,17 @@
   <div id="toast"></div>
 
 <script>
+window.addEventListener('keydown', function(e) {
+  if ((e.metaKey || e.ctrlKey) && e.key === 's') {
+    e.preventDefault();
+    
+    // Assuming your save button has an ID or you call your save function directly
+    if (typeof savePractice === "function") {
+      savePractice(); 
+      // Or: document.getElementById('your-save-button-id').click();
+    }
+  }
+});
 // ── Coach indicator (read-only on this page) ───────────────
 function initCoachIndicator() {
   const name = localStorage.getItem('drillLab:coach') || '';
@@ -1112,7 +1147,7 @@ function getPracticeData() {
 
 async function savePractice() {
   const coach = getCoach();
-  if (!coach) { showToast('No coach name set — log in from the Hub first', true); return; }
+  if (!coach) { showToast('No coach name set — log in from the Lab first', true); return; }
   const data = getPracticeData();
   try {
     const res = await fetch('/save-practice', {

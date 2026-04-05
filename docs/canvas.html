@@ -3,9 +3,14 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Drill Lab Canvas</title>
+  <title>Drill Canvas | Rink Lab</title>
   <link rel="stylesheet" href="style.css"/>
   <style>
+    .btn-lab { background: #0307f1;
+      color: #FFFFFF;
+      font-size: 14px;
+      border: 1px solid var(--border);
+    }
     #coach-indicator {
       display: flex;
       align-items: center;
@@ -31,8 +36,8 @@
 
 <!-- ── Top bar ───────────────────────────────────────────────── -->
 <div id="top-bar">
-  <a href="index.html" class="btn btn-secondary">← Hub</a>
-  <span id="logo">🏒 Drill Lab Canvas</span>
+  <a href="index.html" class="btn btn-lab">← LAB</a>
+  <span id="logo">⬡ DRILL LAB CANVAS</span>
   <input type="text" id="drill-title"
          placeholder="Drill Title"
          autocomplete="off"/>
@@ -236,6 +241,28 @@
 <script src="js/interaction.js"></script>
 <script src="js/io.js"></script>
 <script>
+  // --- Shortcut keys -----------
+  window.addEventListener('keydown', function(e) {
+    // Check for Cmd (Mac) or Ctrl (Windows) + S
+    if ((e.metaKey || e.ctrlKey) && e.key === 's') {
+      e.preventDefault(); // Stop the browser's "Save Page" dialog
+      
+      // 1. Trigger the main "Save" (Local/Cloud)
+      const saveBtn = document.getElementById('btn-save-local');
+      if (saveBtn) {
+        saveBtn.click();
+      }
+    }
+    
+    // Optional: Alt + S for "Save JSON"
+    if (e.altKey && e.key === 's') {
+      e.preventDefault();
+      const saveJsonBtn = document.getElementById('btn-save');
+      if (saveJsonBtn) {
+        saveJsonBtn.click();
+      }
+    }
+  });
   // ── Coach indicator (read-only on this page) ───────────────
   function initCoachIndicator() {
     const name = localStorage.getItem('drillLab:coach') || '';
