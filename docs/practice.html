@@ -488,6 +488,14 @@
     @page { size: letter portrait; margin: 13mm 14mm; }
 
     @media print {
+      /* Reset the app-shell constraints — style.css sets body to
+         height:100vh + overflow:hidden, which clips print output
+         to exactly one page. These overrides must come first. */
+      html, body {
+        height: auto !important;
+        overflow: visible !important;
+      }
+
       body > * { display: none !important; }
 
       #print-container {
@@ -572,7 +580,7 @@
         margin-bottom: 7pt;
         break-inside: avoid;
         page-break-inside: avoid;
-        overflow: hidden;
+        /* overflow: hidden; */
       }
 
       /* Bar: dark blue, white text */
@@ -580,12 +588,15 @@
         background: #1e3a5f;
         color: white;
         padding: 5pt 8pt;
-        display: table;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
         width: 100%;
         box-sizing: border-box;
+        border-radius: 2pt 2pt 0 0;
       }
-      .pc-drill-bar-left  { display: table-cell; vertical-align: middle; }
-      .pc-drill-bar-right { display: table-cell; vertical-align: middle; text-align: right; white-space: nowrap; }
+      .pc-drill-bar-left  { flex: 1; }
+      .pc-drill-bar-right { white-space: nowrap; flex-shrink: 0; }
       .pc-drill-num  { font-size: 8pt; opacity: .6; margin-right: 5pt; }
       .pc-drill-title { font-size: 11pt; font-weight: 700; }
       .pc-drill-tag {
@@ -598,16 +609,17 @@
       .pc-drill-time { font-size: 10pt; font-weight: 700; }
       .pc-drill-time-lbl { font-size: 7.5pt; opacity: .7; margin-left: 2pt; }
 
-      /* Body — table layout for rock-solid cross-browser print */
-      .pc-drill-body { display: table; width: 100%; }
+            /* Body — float layout is the most reliable for print pagination.
+         display:table blocks page breaks; flexbox has quirks in print. */
+      .pc-drill-body { display: block; overflow: visible; }
+      .pc-drill-body::after { content: ''; display: table; clear: both; }
 
       .pc-drill-img-cell {
-        display: table-cell;
-        width: 115mm;          /* default / full rink */
+        float: left;
+        width: 115mm;
         padding: 0;
         background: #fff;
         border-right: 1pt solid #d0d8e0;
-        vertical-align: top;
       }
       /* Full rink ~2.15:1 — wider column */
       .pc-drill-img-cell.rink-full { width: 120mm; }
@@ -629,8 +641,9 @@
       }
 
       .pc-drill-desc-cell {
-        display: table-cell;
-        vertical-align: top;
+        display: block;
+        overflow: visible;
+        /* vertical-align: top; */
         padding: 7pt 9pt;
         font-size: 9pt;
         line-height: 1.65;
@@ -1317,11 +1330,11 @@ function exportPDF() {
 
     const rinkClass = (item.rinkView === 'full') ? 'rink-full' : 'rink-half';
     const imgCell = item.type === 'diagram' ? `
-      <td class="pc-drill-img-cell ${rinkClass}">
+      <div class="pc-drill-img-cell ${rinkClass}">
         ${item.thumbnail
           ? `<img src="${item.thumbnail}" alt="${esc(item.name)}" />`
           : `<div class="pc-no-img">No diagram available.</div>`}
-      </td>` : '';
+      </div>` : '';
 
     const descHtml = item.desc
       ? item.desc.split(/\n|<br>/i).map(l => `<p>${esc(l)}</p>`).join('')
@@ -1337,9 +1350,9 @@ function exportPDF() {
           </div>
           <div class="pc-drill-bar-right">${item.duration} min</div>
         </div>
-        <table class="pc-drill-body">
-          <tr>${imgCell}<td class="pc-drill-desc-cell">${descHtml}</td></tr>
-        </table>
+        <div class="pc-drill-body">
+          ${imgCell}<div class="pc-drill-desc-cell">${descHtml}</div>
+        </div>
       </div>`;
   }).join('');
 
