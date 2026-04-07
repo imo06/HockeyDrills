@@ -12,25 +12,20 @@
       display: block !important;
     }
     .btn-lab { 
-      background: #d00000; /* Racing Red */
-      color: #ffffff;
+      background: #d00000;
       color: #ffffff;
       font-size: 14px;
       font-weight: 800;
       border: 1px solid #ff4d4d;
     }
-    .btn-lab:hover {
-      background: #9d0000;
-    }
-    /* Tutorial Specific Styles */
+    .btn-lab:hover { background: #9d0000; }
+
     .tutorial-container {
       max-width: 900px;
       margin: 40px auto;
       padding: 0 20px;
       color: var(--text);
-      color: var(--text);
     }
-
     .tut-section {
       background: var(--panel);
       border: 1px solid var(--border);
@@ -38,7 +33,6 @@
       padding: 30px;
       margin-bottom: 30px;
     }
-
     .tut-header {
       display: flex;
       align-items: center;
@@ -47,28 +41,15 @@
       border-bottom: 1px solid var(--border);
       padding-bottom: 15px;
     }
-
     .tut-header h2 {
-      color: var(--accent);
       color: var(--accent);
       text-transform: uppercase;
       letter-spacing: 0.1em;
     }
-
-    .step-list {
-      list-style: none;
-      padding: 0;
-    }
-
-    .step-item {
-      display: flex;
-      gap: 15px;
-      margin-bottom: 20px;
-    }
-
+    .step-list { list-style: none; padding: 0; }
+    .step-item { display: flex; gap: 15px; margin-bottom: 20px; }
     .step-number {
       background: var(--accent);
-      color: #000;
       color: #000;
       width: 28px;
       height: 28px;
@@ -79,62 +60,87 @@
       font-weight: 900;
       flex-shrink: 0;
     }
-
-    .step-content h3 {
-      font-size: 16px;
-      margin-bottom: 5px;
-      color: var(--text);
-      color: var(--text);
-    }
-
-    .step-content p {
-      font-size: 14px;
-      color: var(--muted);
-      color: var(--muted);
-      line-height: 1.6;
-    }
-    
-    .shortcut-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); /* Automatically fits columns */
-      gap: 15px;
-      margin-top: 15px;
-    }
-
-    .shortcut-item {
-      background: var(--hover);
-      padding: 10px;
-      border-radius: 4px;
-      border: 1px solid var(--border);
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-
+    .step-content h3 { font-size: 16px; margin-bottom: 5px; color: var(--text); }
+    .step-content p { font-size: 14px; color: var(--muted); line-height: 1.6; }
+    .step-content p + p { margin-top: 8px; }
     kbd {
       background: #333;
-      border: 1px solid #555;
-      border-radius: 3px;
-      padding: 2px 6px;
-      font-family: monospace;
-      color: var(--accent);
-    }
-
-    /* kbd {
-      background: #333;
       border-radius: 3px;
       border: 1px solid #555;
-      color: #fff;
       color: #fff;
       display: inline-block;
       font-size: 11px;
       font-weight: bold;
       padding: 2px 6px;
       white-space: nowrap;
-    } */
-
-    .back-nav {
-      margin-bottom: 20px;
+    }
+    .shortcut-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+      margin-top: 10px;
+    }
+    .shortcut-table th {
+      text-align: left;
+      padding: 8px 12px;
+      color: var(--accent);
+      border-bottom: 1px solid var(--border);
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+    .shortcut-table td {
+      padding: 8px 12px;
+      border-bottom: 1px solid var(--border);
+      color: var(--muted);
+      vertical-align: middle;
+    }
+    .shortcut-table td:first-child { white-space: nowrap; }
+    .shortcut-table tr:last-child td { border-bottom: none; }
+    .shortcut-table tr:hover td { background: var(--hover); }
+    .shortcut-cols {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0 24px;
+    }
+    @media (max-width: 600px) { .shortcut-cols { grid-template-columns: 1fr; } }
+    .tip-box {
+      background: rgba(255, 107, 53, 0.08);
+      border-left: 3px solid var(--accent);
+      border-radius: 0 6px 6px 0;
+      padding: 10px 14px;
+      margin-top: 12px;
+      font-size: 13px;
+      color: var(--muted);
+      line-height: 1.6;
+    }
+    .tip-box strong { color: var(--accent); }
+    .toc {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 20px 28px;
+      margin-bottom: 30px;
+    }
+    .toc h3 {
+      color: var(--accent);
+      text-transform: uppercase;
+      font-size: 12px;
+      letter-spacing: 0.1em;
+      margin-bottom: 12px;
+    }
+    .toc ol { padding-left: 20px; margin: 0; }
+    .toc li { margin-bottom: 6px; font-size: 14px; }
+    .toc a { color: var(--text); text-decoration: none; opacity: 0.8; }
+    .toc a:hover { color: var(--accent); opacity: 1; }
+    .back-nav { margin-bottom: 20px; }
+    .sub-label {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--accent);
+      margin: 18px 0 8px;
+      opacity: 0.8;
     }
   </style>
 </head>
@@ -147,95 +153,405 @@
 
     <header class="hero-section" style="margin-top: 0;">
       <h1 style="font-size: 42px; color: var(--accent);">USER GUIDE</h1>
-      <p class="header-subtitle">Mastering the Drill & Practice Labs</p>
+      <p class="header-subtitle">Mastering the Drill &amp; Practice Labs</p>
     </header>
 
-    <section class="tut-section">
+    <!-- Table of Contents -->
+    <div class="toc">
+      <h3>On this page</h3>
+      <ol>
+        <li><a href="#section-register">Registering</a></li>
+        <li><a href="#section-drills">Creating, Saving &amp; Deleting Drills</a></li>
+        <li><a href="#section-shortcuts">Canvas Keyboard Shortcuts</a></li>
+        <li><a href="#section-players">Players — Subscripts, Colours &amp; Circles</a></li>
+        <li><a href="#section-practice">Creating a Practice &amp; Tracking Time</a></li>
+      </ol>
+    </div>
+
+    <!-- SECTION 1 — REGISTER -->
+    <section class="tut-section" id="section-register">
       <div class="tut-header">
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#ff6b35" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
-          <line x1="3" y1="9" x2="21" y2="9"></line>
-          <line x1="9" y1="21" x2="9" y2="9"></line>
+          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+          <circle cx="12" cy="7" r="4"></circle>
         </svg>
-        <h2>Registration</h2>
+        <h2>Registering</h2>
       </div>
-      <div class="step-list">
-        <p>Registering is necessary for saving your work and accessing all features of the labs.</p>
-        <br>
-      </div>
+      <p class="sub-label">Registering as a Coach</p>
+      <p style="font-size:14px;color:var(--muted);margin-bottom:20px;line-height:1.6;">A free account lets you save drills to the cloud and access them from any device. Registration takes under a minute.</p>
       <div class="step-list">
         <div class="step-item">
           <div class="step-number">1</div>
           <div class="step-content">
-            <h3>Create Your Username</h3>
-            <p>Use the <emph>Create account</emph> on the home page to create a new coach profile. The profile can be used to save drills and
-            practice plans.</p>
-          </div>
-        </div>
-      </div>
-      <div class="step-list">
-        <div class="step-item">
-          <div class="step-number">2</div>
-          <div class="step-content">
-            <h3>Sign In</h3>
-            <p>Use the <emph>Sign In</emph> on the home page to sign in to your existing coach profile. Once signed in your username will be displayed in the top 
-              right corner in the canvas and practice labs and you will be able to save your work.</p>
-          </div>
-        </div>
-      </div>
-        
-    </section>
-
-    <section class="tut-section">
-      <div class="tut-header">
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#ff6b35" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
-          <line x1="3" y1="9" x2="21" y2="9"></line>
-          <line x1="9" y1="21" x2="9" y2="9"></line>
-        </svg>
-        <h2>Drills Lab Canvas</h2>
-      </div>
-
-      <div class="step-list">
-        <div class="step-item">
-          <div class="step-number">1</div>
-          <div class="step-content">
-            <h3>Set Your Rink</h3>
-            <p>Use the <strong>◑ Half Rink</strong> toggle in the right sidebar to switch between full-ice and zone-specific drills.</p>
+            <h3>Go to the Home Page</h3>
+            <p>Navigate to the main Lab page. You will see a sign-in form near the top of the page.</p>
           </div>
         </div>
         <div class="step-item">
           <div class="step-number">2</div>
           <div class="step-content">
-            <h3>Draw & Place</h3>
-            <p>Select tools and icons from the right toolbar. Use the <strong>Select (⌖)</strong> tool to move icons, or use the Line and Path tools to map out player movement and puck flow.</p>
+            <h3>Switch to "Create Account"</h3>
+            <p>Click the <strong>Create account</strong> link below the sign-in form. The form expands to show three fields: <em>Display name</em>, <em>Email</em>, and <em>Password</em>.</p>
           </div>
         </div>
         <div class="step-item">
           <div class="step-number">3</div>
           <div class="step-content">
-            <h3>Describe & Tag</h3>
-            <p>Write the drill descriptions and use the <strong>TAGS</strong> to categorize drills and search for them later.</p>
+            <h3>Fill in Your Details</h3>
+            <p>Enter a <strong>display name</strong> (shown on your saved drills), your <strong>email address</strong>, and a <strong>password</strong> of at least 6 characters.</p>
           </div>
         </div>
         <div class="step-item">
           <div class="step-number">4</div>
           <div class="step-content">
-            <h3>Save Your Work</h3>
-            <p>Press <kbd>Ctrl</kbd> + <kbd>S</kbd> (or <kbd>Cmd</kbd> + <kbd>S</kbd>) to save to the cloud immediately. Use <strong>JSON ↓</strong> to download a backup of your drill file.</p>
+            <h3>Confirm Your Email</h3>
+            <p>Click <strong>Sign up →</strong>. A confirmation email will be sent — click the link inside it to activate your account.</p>
+            <div class="tip-box"><strong>Tip:</strong> Check your spam folder if the email does not arrive within a couple of minutes.</div>
           </div>
         </div>
         <div class="step-item">
-          <div class="step-number">4</div>
+          <div class="step-number">5</div>
           <div class="step-content">
-            <h3>Delete Drills</h3>
-            <p>Open the <strong>📂 Library</strong>, find your drill, and click the <strong>Delete</strong> button. Confirm the popup to permanently remove it.</p>
+            <h3>Sign In</h3>
+            <p>Once confirmed, return to the home page, click <strong>Already have an account?</strong>, enter your email and password, then click <strong>Sign in →</strong>. A "Welcome back" greeting confirms you are authenticated.</p>
+            <p>You can sign out at any time by clicking the <strong>Sign out</strong> link next to your name.</p>
+          </div>
+        </div>
+        
+      </div>
+      <p class="sub-label">Registering a Team</p>
+      <p style="font-size:14px;color:var(--muted);margin-bottom:20px;line-height:1.6;">A registered team means you can save practices and share them with other coaches.</p>
+      <div class="step-list">
+        <div class="step-item">
+          <div class="step-number">1</div>
+          <div class="step-content">
+            <h3>Go to the Home page</h3>
+            <p>Navigate to the main Lab page (<strong>index.html</strong>). You will see a sign-in form and / or a <strong>Create Team</strong> button near the top of the page.</p>
+          </div>
+        </div>
+        <div class="step-item">
+          <div class="step-number">2</div>
+          <div class="step-content">
+            <h3>Create or Join a Team</h3>
+            <p>If you have a team name and pin, click <strong>Join a Team</strong>. Otherwise, click <strong>Create Team</strong>. Make sure to save the pin for later. There is no pin recovery option.</p>
           </div>
         </div>
       </div>
     </section>
 
-    <section class="tut-section">
+    <!-- SECTION 2 — DRILLS -->
+    <section class="tut-section" id="section-drills">
+      <div class="tut-header">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#ff6b35" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+          <line x1="3" y1="9" x2="21" y2="9"></line>
+          <line x1="9" y1="21" x2="9" y2="9"></line>
+        </svg>
+        <h2>Creating, Saving &amp; Deleting Drills</h2>
+      </div>
+
+      <p class="sub-label">Creating a New Drill</p>
+      <div class="step-list">
+        <div class="step-item">
+          <div class="step-number">1</div>
+          <div class="step-content">
+            <h3>Open the Canvas</h3>
+            <p>From the home page click <strong>Drill Labs Canvas</strong>. A blank rink loads ready for drawing.</p>
+          </div>
+        </div>
+        <div class="step-item">
+          <div class="step-number">2</div>
+          <div class="step-content">
+            <h3>Name Your Drill</h3>
+            <p>Click the <strong>Untitled Drill…</strong> text field in the top bar and type a name (e.g. <em>"2-on-1 Rush"</em>). This name appears in your Library and Practice Planner.</p>
+          </div>
+        </div>
+        <div class="step-item">
+          <div class="step-number">3</div>
+          <div class="step-content">
+            <h3>Choose Your Rink View</h3>
+            <p>Click <strong>◑ Half Rink</strong> in the right toolbar to toggle between full-ice and half-ice. Select whichever suits the drill.</p>
+          </div>
+        </div>
+        <div class="step-item">
+          <div class="step-number">4</div>
+          <div class="step-content">
+            <h3>Draw the Drill</h3>
+            <p>The right toolbar has individual tool buttons plus two <strong>flyout palette groups</strong>:</p>
+            <p><strong>Lines &amp; Pen</strong> — click or hover the group button to reveal the <em>Line</em>, <em>Arrow</em>, and <em>Pen (freehand)</em> tools.</p>
+            <p><strong>Equipment</strong> — reveals the <em>Pylon</em> (▲), <em>Net</em> (🥅), and <em>Puck</em> (⚫) tools. Click the puck tool then click anywhere on the rink to place a puck.</p>
+            <p>See <a href="#section-shortcuts">Keyboard Shortcuts</a> and <a href="#section-players">Players</a> for further detail.</p>
+          </div>
+        </div>
+        <div class="step-item">
+          <div class="step-number">5</div>
+          <div class="step-content">
+            <h3>Add a Description &amp; Tags</h3>
+            <p>Scroll below the canvas and type coaching points, key cues, and variations into the <strong>description</strong> field.</p>
+            <p>Add <strong>tags</strong> in the tags bar (e.g. <em>breakout; forecheck; 2-on-1</em>), separated by semicolons. Tags allow searching and filtering drills later.</p>
+          </div>
+        </div>
+      </div>
+
+      <p class="sub-label">Saving a Drill</p>
+      <div class="step-list">
+        <div class="step-item">
+          <div class="step-number">1</div>
+          <div class="step-content">
+            <h3>Save to the Cloud</h3>
+            <p>Click <strong>💾 Save</strong> in the top bar, or press <kbd>Ctrl</kbd>+<kbd>S</kbd> (<kbd>Cmd</kbd>+<kbd>S</kbd> on Mac). The drill is saved to your account and appears in the Library.</p>
+          </div>
+        </div>
+        <div class="step-item">
+          <div class="step-number">2</div>
+          <div class="step-content">
+            <h3>Download a Local Backup</h3>
+            <p>Click <strong>Save JSON</strong> (or press <kbd>Alt</kbd>+<kbd>S</kbd>) to download a <code>.json</code> backup to your computer — useful for sharing or offline storage.</p>
+          </div>
+        </div>
+        <div class="step-item">
+          <div class="step-number">3</div>
+          <div class="step-content">
+            <h3>Load a JSON File</h3>
+            <p>Click <strong>Load JSON</strong> to open a previously exported <code>.json</code> file. The drill loads onto the canvas ready for editing.</p>
+          </div>
+        </div>
+      </div>
+
+      <p class="sub-label">Browsing &amp; Deleting Drills</p>
+      <div class="step-list">
+        <div class="step-item">
+          <div class="step-number">1</div>
+          <div class="step-content">
+            <h3>Open the Library</h3>
+            <p>Click <strong>📂 Library</strong> in the top bar to see all saved drills. Click any drill name to load it onto the canvas.</p>
+          </div>
+        </div>
+        <div class="step-item">
+          <div class="step-number">2</div>
+          <div class="step-content">
+            <h3>Delete a Drill</h3>
+            <p>In the Library, find the drill you want to remove and click its <strong>Delete</strong> button. You will be asked to confirm before permanent deletion.</p>
+          </div>
+        </div>
+        <div class="step-item">
+          <div class="step-number">3</div>
+          <div class="step-content">
+            <h3>Clear the Current Canvas</h3>
+            <p>Click <strong>✕ Clear Canvas</strong> in the toolbar to wipe the canvas and start fresh. The saved cloud copy is not affected — only the drawing on screen is cleared.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SECTION 3 — SHORTCUTS -->
+    <section class="tut-section" id="section-shortcuts">
+      <div class="tut-header">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#ff6b35" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="2" y="6" width="20" height="13" rx="2"></rect>
+          <path d="M6 10h.01M10 10h.01M14 10h.01M18 10h.01M8 14h8"></path>
+        </svg>
+        <h2>Canvas Keyboard Shortcuts</h2>
+      </div>
+      <p style="font-size:14px;color:var(--muted);margin-bottom:20px;line-height:1.6;">
+        All shortcuts are active when the canvas is focused and you are <strong>not</strong> typing in a text field.
+        On Mac, replace <kbd>Ctrl</kbd> with <kbd>Cmd</kbd>.
+      </p>
+
+      <div class="shortcut-cols">
+        <div>
+          <p class="sub-label">Tool Selection</p>
+          <table class="shortcut-table">
+            <thead><tr><th>Key</th><th>Tool</th></tr></thead>
+            <tbody>
+              <tr><td><kbd>V</kbd></td><td>Select / Move</td></tr>
+              <tr><td><kbd>R</kbd></td><td>Rectangle</td></tr>
+              <tr><td><kbd>E</kbd></td><td>Ellipse / Circle</td></tr>
+              <tr><td><kbd>L</kbd></td><td>Line</td></tr>
+              <tr><td><kbd>A</kbd></td><td>Arrow</td></tr>
+              <tr><td><kbd>T</kbd></td><td>Text</td></tr>
+              <tr><td><kbd>P</kbd></td><td>Pen (freehand)</td></tr>
+            </tbody>
+          </table>
+
+          <p class="sub-label">File &amp; Saving</p>
+          <table class="shortcut-table">
+            <thead><tr><th>Key</th><th>Action</th></tr></thead>
+            <tbody>
+              <tr><td><kbd>Ctrl</kbd>+<kbd>S</kbd></td><td>Save to cloud</td></tr>
+              <tr><td><kbd>Alt</kbd>+<kbd>S</kbd></td><td>Save JSON to disk</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div>
+          <p class="sub-label">Editing</p>
+          <table class="shortcut-table">
+            <thead><tr><th>Key</th><th>Action</th></tr></thead>
+            <tbody>
+              <tr><td><kbd>Del</kbd> / <kbd>Backspace</kbd></td><td>Delete selected element(s)</td></tr>
+              <tr><td><kbd>Ctrl</kbd>+<kbd>D</kbd></td><td>Duplicate selected</td></tr>
+              <tr><td><kbd>Ctrl</kbd>+<kbd>Z</kbd></td><td>Undo</td></tr>
+              <tr><td><kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>Z</kbd></td><td>Redo</td></tr>
+              <tr><td><kbd>Escape</kbd></td><td>Cancel drawing / deselect</td></tr>
+            </tbody>
+          </table>
+
+          <p class="sub-label">Transform</p>
+          <table class="shortcut-table">
+            <thead><tr><th>Key</th><th>Action</th></tr></thead>
+            <tbody>
+              <tr><td><kbd>Ctrl</kbd>+<kbd>H</kbd></td><td>Flip horizontal</td></tr>
+              <tr><td><kbd>Ctrl</kbd>+<kbd>V</kbd></td><td>Flip vertical</td></tr>
+              <tr><td><kbd>Ctrl</kbd>+<kbd>R</kbd></td><td>Rotate 90°</td></tr>
+            </tbody>
+          </table>
+
+          <p class="sub-label">Text tool (while typing)</p>
+          <table class="shortcut-table">
+            <thead><tr><th>Key</th><th>Action</th></tr></thead>
+            <tbody>
+              <tr><td><kbd>Enter</kbd> / <kbd>Escape</kbd></td><td>Commit and finish text</td></tr>
+              <tr><td><kbd>Backspace</kbd></td><td>Delete last character</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="tip-box" style="margin-top:20px;">
+        <strong>Multi-select:</strong> Hold <kbd>Shift</kbd> and click multiple elements to select them as a group. The transform shortcuts (Flip, Rotate) apply to the whole selection.
+      </div>
+    </section>
+
+    <!-- SECTION 4 — PLAYERS -->
+    <section class="tut-section" id="section-players">
+      <div class="tut-header">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#ff6b35" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="8" r="4"></circle>
+          <path d="M6 20v-2a6 6 0 0 1 12 0v2"></path>
+        </svg>
+        <h2>Players — Subscripts, Colours &amp; Circles</h2>
+      </div>
+      <p style="font-size:14px;color:var(--muted);margin-bottom:20px;line-height:1.6;">
+        Select the <strong>🏒 Player</strong> tool and click anywhere on the rink to place a player.
+        Switch back to the <strong>Select (V)</strong> tool and click any player to edit its properties in the right panel.
+      </p>
+
+      <p class="sub-label">Placing &amp; Choosing Player Type</p>
+      <div class="step-list">
+        <div class="step-item">
+          <div class="step-number">1</div>
+          <div class="step-content">
+            <h3>Set the Type Before Placing</h3>
+            <p>In the right toolbar, use the <strong>Player type</strong> dropdown to choose the label shown on the icon: <strong>F</strong> (Forward), <strong>D</strong> (Defenceman), <strong>G</strong> (Goalie), <strong>C</strong>, <strong>W</strong>, <strong>X</strong>, or <strong>O</strong>.</p>
+          </div>
+        </div>
+        <div class="step-item">
+          <div class="step-number">2</div>
+          <div class="step-content">
+            <h3>Change Type After Placing</h3>
+            <p>Select an existing player with the <strong>Select (V)</strong> tool. In the <strong>Selected</strong> properties panel, change the <strong>Player</strong> dropdown to the desired type.</p>
+          </div>
+        </div>
+        <div class="step-item">
+          <div class="step-number">3</div>
+          <div class="step-content">
+            <h3>Adjust Player Size</h3>
+            <p>Use the <strong>Player size</strong> dropdown (Small / Medium / Large / X-Large) before placing to control how large the icon appears on the rink.</p>
+          </div>
+        </div>
+      </div>
+
+      <p class="sub-label">Adding Subscripts (e.g. F₁, F₂, D₁)</p>
+      <div class="step-list">
+        <div class="step-item">
+          <div class="step-number">1</div>
+          <div class="step-content">
+            <h3>Select the Player</h3>
+            <p>Click the player with the <strong>Select (V)</strong> tool. The <strong>Selected</strong> panel will appear in the right toolbar.</p>
+          </div>
+        </div>
+        <div class="step-item">
+          <div class="step-number">2</div>
+          <div class="step-content">
+            <h3>Enter the Subscript</h3>
+            <p>Find the <strong>Sub</strong> field at the bottom of the Selected panel. Type a number or short label (up to 2 characters), such as <em>1</em> or <em>2</em>. The icon updates immediately — a Forward labelled <em>1</em> becomes <strong>F₁</strong>.</p>
+            <div class="tip-box"><strong>Tip:</strong> Use subscripts to differentiate same-type players — e.g. F₁ starts with the puck while F₂ cuts to the net.</div>
+          </div>
+        </div>
+      </div>
+
+      <p class="sub-label">Changing Player Colour</p>
+      <div class="step-list">
+        <div class="step-item">
+          <div class="step-number">1</div>
+          <div class="step-content">
+            <h3>Select the Player</h3>
+            <p>Click the player with the <strong>Select (V)</strong> tool.</p>
+          </div>
+        </div>
+        <div class="step-item">
+          <div class="step-number">2</div>
+          <div class="step-content">
+            <h3>Change the Stroke Colour</h3>
+            <p>In the <strong>Selected</strong> panel, click the <strong>Stroke</strong> colour swatch and pick a colour from the picker. This changes the outline and label colour of the icon.</p>
+          </div>
+        </div>
+        <div class="step-item">
+          <div class="step-number">3</div>
+          <div class="step-content">
+            <h3>Set a Default Colour</h3>
+            <p>You can also set the stroke colour <em>before</em> placing a player using the <strong>Stroke</strong> swatch in the main toolbar. All new players will use that colour until changed.</p>
+          </div>
+        </div>
+      </div>
+
+      <p class="sub-label">Putting a Circle Around a Player</p>
+      <div class="step-list">
+        <div class="step-item">
+          <div class="step-number">1</div>
+          <div class="step-content">
+            <h3>Select the Player</h3>
+            <p>Click the player with the <strong>Select (V)</strong> tool.</p>
+          </div>
+        </div>
+        <div class="step-item">
+          <div class="step-number">2</div>
+          <div class="step-content">
+            <h3>Enable the Circle</h3>
+            <p>In the <strong>Selected</strong> panel, find the <strong>Circle</strong> checkbox and tick it. A circle will appear around the player icon — useful for marking a coach, a key player, or a starting position.</p>
+          </div>
+        </div>
+      </div>
+
+      <p class="sub-label">Other Properties</p>
+      <div class="step-list">
+        <div class="step-item">
+          <div class="step-number">1</div>
+          <div class="step-content">
+            <h3>Opacity</h3>
+            <p>Use the <strong>Opacity</strong> slider in the Selected panel to make any element semi-transparent — handy for optional player positions or ghosted paths.</p>
+          </div>
+        </div>
+        <div class="step-item">
+          <div class="step-number">2</div>
+          <div class="step-content">
+            <h3>Line Style</h3>
+            <p>For lines and arrows, use the <strong>Line style</strong> dropdown to choose <em>Solid</em>, <em>Dashed</em>, <em>Dotted</em>, or <em>Wiggle</em>. By convention, solid lines indicate puck movement and dashed lines indicate skating without the puck.</p>
+          </div>
+        </div>
+        <div class="step-item">
+          <div class="step-number">3</div>
+          <div class="step-content">
+            <h3>Fill (Shapes)</h3>
+            <p>For rectangles and ellipses, tick the <strong>Fill</strong> checkbox in the Selected panel and choose a fill colour to shade the inside of the shape.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SECTION 5 — PRACTICE -->
+    <section class="tut-section" id="section-practice">
       <div class="tut-header">
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#ff6b35" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path>
@@ -243,98 +559,122 @@
           <line x1="8" y1="11" x2="16" y2="11"></line>
           <line x1="8" y1="16" x2="16" y2="16"></line>
         </svg>
-        <h2>Practice Lab</h2>
+        <h2>Creating a Practice &amp; Tracking Time</h2>
       </div>
+      <p style="font-size:14px;color:var(--muted);margin-bottom:20px;line-height:1.6;">
+        The Practice Lab lets you assemble saved drills into a timed practice plan. Open it by clicking
+        <strong>PRACTICE</strong> in the canvas top bar, or navigate directly to <strong>practice.html</strong>.
+      </p>
 
+      <p class="sub-label">Setting Up the Practice</p>
       <div class="step-list">
         <div class="step-item">
           <div class="step-number">1</div>
           <div class="step-content">
-            <h3>Build Your Drill Sequence</h3>
-            <p>Search for saved drills in the sidebar and click <strong>Add</strong> to move them into your 60-minute timeline. Use the 
-            <strong>Quick Drill</strong> to add drills without pictures.</p>
+            <h3>Name the Practice</h3>
+            <p>Click the <strong>Untitled Practice…</strong> field at the top and type a name (e.g. <em>"Tuesday U16 — Breakout Emphasis"</em>).</p>
           </div>
         </div>
         <div class="step-item">
           <div class="step-number">2</div>
           <div class="step-content">
-            <h3>Adjust Timing</h3>
-            <p>Update the duration for each drill. The generator will track your total practice time to ensure you stay within your ice slot.</p>
-          </div>
-        </div>
-        <div class="step-item">
-          <div class="step-number">2</div>
-          <div class="step-content">
-            <h3>Checking Timing</h3>
-            <p>Look at the <strong>Timeline Bar</strong> at the bottom. The <strong>Total Time</strong> shows how many minutes you've used out of your 60-minute slot. The bar will turn orange if you exceed your ice time.</p>
+            <h3>Set Date &amp; Team</h3>
+            <p>Fill in the <strong>Date</strong> and <strong>Team</strong> fields in the metadata row. These appear on the exported PDF.</p>
           </div>
         </div>
         <div class="step-item">
           <div class="step-number">3</div>
           <div class="step-content">
-            <h3>Share with Coaches</h3>
-            <p>Use the <strong>Share</strong> button to generate a link or export a summary for your assistant coaches and players.</p>
+            <h3>Set Your Ice Slot Duration</h3>
+            <p>Update the <strong>target duration</strong> field (default is <em>60 minutes</em>). The timeline bar and remaining-time counter will recalibrate automatically.</p>
+          </div>
+        </div>
+      </div>
+
+      <p class="sub-label">Adding Drills</p>
+      <div class="step-list">
+        <div class="step-item">
+          <div class="step-number">1</div>
+          <div class="step-content">
+            <h3>Search Your Library</h3>
+            <p>Use the search field in the left panel to find saved drills by name or tag. Click <strong>Add</strong> next to any drill to append it to your practice plan.</p>
+          </div>
+        </div>
+        <div class="step-item">
+          <div class="step-number">2</div>
+          <div class="step-content">
+            <h3>Add a Quick Drill</h3>
+            <p>For activities without a diagram (warm-up, stretching, team talk), click <strong>Quick Drill</strong>, enter a name and description — no canvas required.</p>
+          </div>
+        </div>
+        <div class="step-item">
+          <div class="step-number">3</div>
+          <div class="step-content">
+            <h3>Reorder Drills</h3>
+            <p>Drag any drill card up or down in the list to reorder the sequence. Time totals update instantly.</p>
+          </div>
+        </div>
+      </div>
+
+      <p class="sub-label">Tracking &amp; Checking Remaining Time</p>
+      <div class="step-list">
+        <div class="step-item">
+          <div class="step-number">1</div>
+          <div class="step-content">
+            <h3>Set Each Drill's Duration</h3>
+            <p>Each drill card has a <strong>minutes</strong> input on its right side. Click it and type the number of minutes to allocate. All totals update automatically.</p>
+          </div>
+        </div>
+        <div class="step-item">
+          <div class="step-number">2</div>
+          <div class="step-content">
+            <h3>Read the Timeline Bar</h3>
+            <p>The <strong>timeline bar</strong> at the bottom of the practice list fills as you add time. The label to its right shows <strong>how many minutes remain</strong> in your ice slot.</p>
+            <p>If total time <em>exceeds</em> your slot, the bar turns <strong>orange</strong> as a warning and the remaining value goes negative.</p>
+          </div>
+        </div>
+        <div class="step-item">
+          <div class="step-number">3</div>
+          <div class="step-content">
+            <h3>Check the Running Total</h3>
+            <p>Next to the target duration field, the <strong>total</strong> counter (e.g. <em>55:00</em>) shows the sum of all drill durations in mm:ss. It turns red when you exceed the target.</p>
           </div>
         </div>
         <div class="step-item">
           <div class="step-number">4</div>
           <div class="step-content">
+            <h3>Remove a Drill</h3>
+            <p>Click the <strong>✕</strong> button on any drill card to remove it from the practice. The timeline recalculates immediately.</p>
+          </div>
+        </div>
+      </div>
+
+      <p class="sub-label">Saving &amp; Exporting</p>
+      <div class="step-list">
+        <div class="step-item">
+          <div class="step-number">1</div>
+          <div class="step-content">
+            <h3>Save the Practice</h3>
+            <p>Click <strong>💾 Save</strong> to save the practice to your account. Reload it later with the <strong>Load</strong> button.</p>
+          </div>
+        </div>
+        <div class="step-item">
+          <div class="step-number">2</div>
+          <div class="step-content">
             <h3>Export to PDF</h3>
-            <p>Use the <strong>PDF ↓</strong> button to download your practice as a PDF, ready to be used on-ice!</p>
+            <p>Click <strong>PDF ↓</strong> to generate a printable PDF — including drill diagrams, descriptions, and timing — ready to hand out on the bench.</p>
+          </div>
+        </div>
+        <div class="step-item">
+          <div class="step-number">3</div>
+          <div class="step-content">
+            <h3>Share with Other Coaches</h3>
+            <p>Click <strong>Share</strong> to generate a shareable link you can send to assistant coaches so they can view the practice plan on their own device.</p>
           </div>
         </div>
       </div>
-    </section>
-
-    <section class="tut-section">
-      <div class="tut-header">
-        <h2>Advanced Canvas Styling</h2>
-      </div>
-      <div class="step-item">
-        <div class="step-number">1</div>
-        <div class="step-content">
-          <h3>Player Labels</h3>
-          <p>When a player is selected, use the properties panel on the bottom right to change their label (e.g., "D1", "F2"). Use the size slider to adjust visibility.</p>
-        </div>
-      </div>
-      <div class="step-item">
-        <div class="step-number">2</div>
-        <div class="step-content">
-          <h3>Changing Colour</h3>
-          <p>Select any object and use the <strong>Stroke</strong> or <strong>Fill</strong> colour pickers in the toolbar to change its appearance.</p>
-        </div>
-      </div>
-      <div class="step-item">
-        <div class="step-number">3</div>
-        <div class="step-content">
-          <h3>Coaches Symbol</h3>
-          <p>Select a player (letter) and check the <strong>Circle</strong> option to display a coach symbol, which is a letter with a circle around it.</p>
-        </div>
-      </div>
-        
-
-      <!-- <div class="step-item"> -->
-        <!-- <div class="step-number">3</div> -->
-        <div class="step-content">
-          <h3>Canvas Keyboard Shortcuts</h3>
-          <div class="shortcut-grid">
-            <div class="shortcut-item"><kbd>V</kbd> Select Tool</div>
-            <div class="shortcut-item"><kbd>P</kbd> Pen Tool</div>
-            <div class="shortcut-item"><kbd>L</kbd> Line Tool</div>
-            <div class="shortcut-item"><kbd>A</kbd> Arrow Tool</div>
-            <div class="shortcut-item"><kbd>R</kbd> Rectangle Tool</div>
-            <div class="shortcut-item"><kbd>O</kbd> Ellipse Tool</div>
-            <div class="shortcut-item"><kbd>T</kbd> Text Tool</div>
-            <div class="shortcut-item"><kbd>Del</kbd> / <kbd>Backspace</kbd> Delete</div>
-            <div class="shortcut-item"><kbd>ESC</kbd> Select Tool</div>
-            <div class="shortcut-item"><kbd>Ctrl/Cmd + D</kbd> Duplicate</div>
-            <div class="shortcut-item"><kbd>Ctrl/Cmd + Z</kbd> Undo</div>
-          </div>
-        <!-- </div> -->
-      <!-- </div> -->
     </section>
 
   </div>
-
 </body>
 </html>
