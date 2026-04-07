@@ -154,6 +154,27 @@
     .values-list li::before { content: "🏒"; position: absolute; left: 0; font-size: 14px; }
 
     .final-note { font-style: italic; color: var(--muted); text-align: center; margin-top: 30px; }
+    /* ── Team panel ──────────────────────────────────────────── */
+    #team-panel {
+      max-width: 900px; margin: 16px auto 0; padding: 0 20px; display: none;
+    }
+    #team-banner {
+      background: var(--panel); border: 1px solid var(--border);
+      border-radius: 8px; padding: 16px 24px;
+      display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+    }
+    .team-label { font-size: 13px; color: var(--muted); white-space: nowrap; }
+    .team-input {
+      flex: 1; min-width: 140px; background: var(--bg); color: var(--text);
+      border: 1px solid var(--border); border-radius: 5px; padding: 7px 11px; font-size: 14px;
+    }
+    .team-code-display {
+      font-family: monospace; font-size: 16px; font-weight: bold; letter-spacing: 2px;
+      color: var(--accent); background: var(--bg); border: 1px solid var(--border);
+      border-radius: 5px; padding: 6px 14px; cursor: pointer;
+    }
+    .team-error { font-size: 13px; color: #f38ba8; display: none; width: 100%; margin-top: 4px; }
+
     .extra-space { margin-bottom: 1em; }
   </style>
 </head>
@@ -178,6 +199,35 @@
       <div id="coach-greeting" style="display:none;">
         <span class="welcome-text">Welcome back, <strong id="coach-greeting-name"></strong></span>
         <button class="change-link" id="coach-change">Sign out</button>
+      </div>
+
+    </div>
+  </div>
+
+
+  <!-- ── Team panel ────────────────────────────────────────── -->
+  <div id="team-panel">
+    <div id="team-banner">
+
+      <!-- No team yet -->
+      <div id="team-prompt" style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;width:100%;">
+        <span class="team-label">My Team:</span>
+        <input class="team-input" id="team-name-input" placeholder="Team name" autocomplete="off"/>
+        <button class="btn btn-primary" id="btn-create-team" style="padding:7px 16px;font-size:14px;">Create team</button>
+        <span class="team-label" style="margin-left:8px;">or enter code:</span>
+        <input class="team-input" id="team-code-input" placeholder="ABC123" autocomplete="off" style="max-width:120px;font-family:monospace;letter-spacing:2px;text-transform:uppercase;"/>
+        <button class="btn btn-outline" id="btn-join-team" style="padding:7px 16px;font-size:14px;">Join</button>
+        <span class="team-error" id="team-error"></span>
+      </div>
+
+      <!-- In a team -->
+      <div id="team-info" style="display:none;align-items:center;gap:16px;flex-wrap:wrap;width:100%;">
+        <span class="team-label">My Team:</span>
+        <strong id="team-name-display" style="font-size:15px;color:var(--text);"></strong>
+        <span class="team-label">Invite code:</span>
+        <span class="team-code-display" id="team-code-display" title="Click to copy"></span>
+        <span id="team-copy-hint" style="font-size:12px;color:#a6e3a1;display:none;">Copied!</span>
+        <button class="change-link" id="btn-leave-team" style="margin-left:auto;">Leave team</button>
       </div>
 
     </div>
@@ -353,7 +403,120 @@
     changeBtn.addEventListener('click', async () => {
       await _supabase.auth.signOut();
       localStorage.removeItem(STORAGE_KEY);
+      localStorage.removeItem('drillLab:teamId');
+      hideTeamPanel();
       showPrompt();
+    });
+
+    // ── Team management ───────────────────────────────────────
+
+    function hideTeamPanel() {
+      document.getElementById('team-panel').style.display = 'none';
+    }
+
+    function showTeamPanel(session) {
+      document.getElementById('team-panel').style.display = 'block';
+      loadTeamState(session);
+    }
+
+    async function loadTeamState(session) {
+      const { data: membership } = await _supabase
+        .from('team_member')
+        .select('team_id, team(id, name, code)')
+        .eq('user_id', session.user.id)
+        .maybeSingle();
+
+      if (membership?.team) {
+        showTeamInfo(membership.team);
+      } else {
+        showTeamPrompt();
+      }
+    }
+
+    function showTeamInfo(team) {
+      localStorage.setItem('drillLab:teamId', team.id);
+      document.getElementById('team-prompt').style.display = 'none';
+      const info = document.getElementById('team-info');
+      info.style.display = 'flex';
+      document.getElementById('team-name-display').textContent = team.name;
+      const codeEl = document.getElementById('team-code-display');
+      codeEl.textContent = team.code;
+      codeEl.onclick = () => {
+        navigator.clipboard.writeText(team.code);
+        const hint = document.getElementById('team-copy-hint');
+        hint.style.display = 'inline';
+        setTimeout(() => hint.style.display = 'none', 2000);
+      };
+    }
+
+    function showTeamPrompt() {
+      localStorage.removeItem('drillLab:teamId');
+      document.getElementById('team-info').style.display   = 'none';
+      document.getElementById('team-prompt').style.display = 'flex';
+    }
+
+    function teamError(msg) {
+      const el = document.getElementById('team-error');
+      el.textContent    = msg;
+      el.style.display  = msg ? 'inline' : 'none';
+    }
+
+    function randomCode() {
+      return Math.random().toString(36).substring(2, 8).toUpperCase();
+    }
+
+    document.getElementById('btn-create-team').addEventListener('click', async () => {
+      const name = document.getElementById('team-name-input').value.trim();
+      if (!name) { teamError('Enter a team name.'); return; }
+      teamError('');
+
+      const { data: { session } } = await _supabase.auth.getSession();
+      const code = randomCode();
+
+      const { data: team, error } = await _supabase
+        .from('team')
+        .insert({ name, code, owner_id: session.user.id })
+        .select()
+        .single();
+
+      if (error) { teamError(error.message); return; }
+
+      await _supabase.from('team_member').insert({ team_id: team.id, user_id: session.user.id });
+      showTeamInfo(team);
+    });
+
+    document.getElementById('btn-join-team').addEventListener('click', async () => {
+      const code = document.getElementById('team-code-input').value.trim().toUpperCase();
+      if (!code) { teamError('Enter an invite code.'); return; }
+      teamError('');
+
+      const { data: team, error } = await _supabase
+        .from('team')
+        .select('id, name, code')
+        .eq('code', code)
+        .maybeSingle();
+
+      if (error || !team) { teamError('Team not found — check the code and try again.'); return; }
+
+      const { data: { session } } = await _supabase.auth.getSession();
+      const { error: joinError } = await _supabase
+        .from('team_member')
+        .insert({ team_id: team.id, user_id: session.user.id });
+
+      if (joinError && !joinError.message.includes('duplicate')) {
+        teamError(joinError.message); return;
+      }
+
+      showTeamInfo(team);
+    });
+
+    document.getElementById('btn-leave-team').addEventListener('click', async () => {
+      if (!confirm('Leave this team? You will no longer see shared practices.')) return;
+      const { data: { session } } = await _supabase.auth.getSession();
+      const teamId = localStorage.getItem('drillLab:teamId');
+      await _supabase.from('team_member').delete()
+        .eq('user_id', session.user.id).eq('team_id', teamId);
+      showTeamPrompt();
     });
 
     // Boot — restore session if still active
@@ -362,6 +525,7 @@
         const name = session.user.user_metadata?.display_name || session.user.email;
         localStorage.setItem(STORAGE_KEY, name);
         showGreeting(name);
+        showTeamPanel(session);
       } else {
         const stored = localStorage.getItem(STORAGE_KEY);
         if (stored) showGreeting(stored);
