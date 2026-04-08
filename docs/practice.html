@@ -1029,6 +1029,7 @@ function renderList() {
   updateEmpty();
   document.getElementById('practice-list').innerHTML = practiceItems.map((item, i) => `
     <div class="practice-item" id="pi-${item.id}"
+         data-idx="${i}"
          draggable="true"
          ondragstart="itemDragStart(event,${i})"
          ondragover="itemDragOver(event,${i})"
@@ -1157,6 +1158,80 @@ function itemDragEnd() {
   libDragId = null;
   dragSrcIdx = null;
 }
+
+// ─────────────────────────────────────────────
+//  Touch drag-and-drop for practice list reorder
+//  (HTML5 drag events don't fire on iOS Safari)
+// ─────────────────────────────────────────────
+(function initTouchDrag() {
+  let touchSrcIdx = null;
+  let ghost       = null;
+  let lastOver    = null;
+
+  function clearHighlights() {
+    document.querySelectorAll('.practice-item.drag-over').forEach(e => e.classList.remove('drag-over'));
+  }
+
+  function createGhost(sourceEl, touchX, touchY) {
+    const r = sourceEl.getBoundingClientRect();
+    const g = sourceEl.cloneNode(true);
+    g.style.cssText = `
+      position:fixed; left:${r.left}px; top:${r.top}px;
+      width:${r.width}px; opacity:0.75; pointer-events:none;
+      z-index:9999; box-shadow:0 6px 24px rgba(0,0,0,.4);
+      border-radius:8px; margin:0;
+    `;
+    g._offX = touchX - r.left;
+    g._offY = touchY - r.top;
+    document.body.appendChild(g);
+    return g;
+  }
+
+  document.addEventListener('touchstart', e => {
+    const handle = e.target.closest('.drag-handle');
+    if (!handle) return;
+    e.preventDefault();
+    const t = e.touches[0];
+    const item = handle.closest('.practice-item');
+    if (!item) return;
+    touchSrcIdx = +item.dataset.idx;
+    item.classList.add('dragging');
+    ghost = createGhost(item, t.clientX, t.clientY);
+  }, { passive: false });
+
+  document.addEventListener('touchmove', e => {
+    if (touchSrcIdx === null || !ghost) return;
+    e.preventDefault();
+    const t = e.touches[0];
+    ghost.style.left = (t.clientX - ghost._offX) + 'px';
+    ghost.style.top  = (t.clientY - ghost._offY) + 'px';
+    ghost.style.display = 'none';
+    const below = document.elementFromPoint(t.clientX, t.clientY);
+    ghost.style.display = '';
+    clearHighlights();
+    const targetItem = below && below.closest('.practice-item');
+    if (targetItem) {
+      const targetIdx = +targetItem.dataset.idx;
+      if (!isNaN(targetIdx) && targetIdx !== touchSrcIdx) {
+        targetItem.classList.add('drag-over');
+        lastOver = targetIdx;
+      } else { lastOver = null; }
+    } else { lastOver = null; }
+  }, { passive: false });
+
+  document.addEventListener('touchend', e => {
+    if (touchSrcIdx === null) return;
+    document.querySelectorAll('.practice-item').forEach(el => el.classList.remove('dragging', 'drag-over'));
+    if (ghost) { ghost.remove(); ghost = null; }
+    if (lastOver !== null && lastOver !== touchSrcIdx) {
+      const [moved] = practiceItems.splice(touchSrcIdx, 1);
+      practiceItems.splice(lastOver, 0, moved);
+      renderList();
+    }
+    touchSrcIdx = null;
+    lastOver    = null;
+  }, { passive: false });
+})();
 
 // ─────────────────────────────────────────────
 //  Save / Share / PDF

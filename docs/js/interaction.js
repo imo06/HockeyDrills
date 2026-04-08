@@ -92,11 +92,52 @@ function initMouseEvents() {
   canvas.addEventListener('mousemove', onMouseMove);
   canvas.addEventListener('mouseup',   onMouseUp);
   canvas.addEventListener('dblclick',  onDblClick);
+  initTouchEvents();
+}
+
+// ── Touch events (iOS / mobile) ───────────────────────────────
+// iOS doesn't fire mouse events for drags, so we translate touch
+// events into the same handlers, reusing the updated canvasPos()
+// which already understands both event types.
+function initTouchEvents() {
+  // passive:false lets us call preventDefault() to stop page scroll
+  // while the user is drawing or dragging on the canvas.
+  canvas.addEventListener('touchstart', e => {
+    if (e.touches.length !== 1) return;   // ignore multi-touch
+    e.preventDefault();
+    onMouseDown(e);
+  }, { passive: false });
+
+  canvas.addEventListener('touchmove', e => {
+    if (e.touches.length !== 1) return;
+    e.preventDefault();
+    onMouseMove(e);
+  }, { passive: false });
+
+  canvas.addEventListener('touchend', e => {
+    e.preventDefault();
+    onMouseUp(e);
+  }, { passive: false });
+
+  // A quick tap (no drag) on text should still trigger double-click edit
+  canvas.addEventListener('touchend', e => {
+    if (State.tool !== 'select') return;
+    const now = Date.now();
+    const last = canvas._lastTap ?? 0;
+    canvas._lastTap = now;
+    if (now - last < 350) onDblClick(e);   // two taps within 350 ms
+  }, { passive: false });
 }
 
 function canvasPos(e) {
   const r = canvas.getBoundingClientRect();
-  return { x: e.clientX - r.left, y: e.clientY - r.top };
+  // Support both mouse events and touch events
+  const src = (e.touches && e.touches.length > 0)
+    ? e.touches[0]
+    : (e.changedTouches && e.changedTouches.length > 0)
+      ? e.changedTouches[0]
+      : e;
+  return { x: src.clientX - r.left, y: src.clientY - r.top };
 }
 
 function onMouseDown(e) {
