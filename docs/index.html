@@ -229,6 +229,7 @@
         <span class="team-code-display" id="team-code-display" title="Click to copy"></span>
         <span id="team-copy-hint" style="font-size:12px;color:#a6e3a1;display:none;">Copied!</span>
         <button class="change-link" id="btn-leave-team" style="margin-left:auto;">Leave team</button>
+        <button class="change-link" id="btn-disband-team" style="display:none;color:#f38ba8;">Disband team</button>
       </div>
 
     </div>
@@ -441,7 +442,7 @@
     async function loadTeamState(session) {
       const { data: membership } = await _supabase
         .from('team_member')
-        .select('team_id, team(id, name, code)')
+        .select('team_id, team(id, name, code, owner_id)')
         .eq('user_id', session.user.id)
         .maybeSingle();
 
@@ -452,7 +453,7 @@
       }
     }
 
-    function showTeamInfo(team) {
+    async function showTeamInfo(team) {
       localStorage.setItem('drillLab:teamId', team.id);
       document.getElementById('team-prompt').style.display = 'none';
       const info = document.getElementById('team-info');
@@ -466,6 +467,12 @@
         hint.style.display = 'inline';
         setTimeout(() => hint.style.display = 'none', 2000);
       };
+
+      // Show Disband button only to the team owner
+      const { data: { session } } = await _supabase.auth.getSession();
+      const isOwner = team.owner_id === session?.user?.id;
+      document.getElementById('btn-disband-team').style.display = isOwner ? 'inline' : 'none';
+      document.getElementById('btn-leave-team').style.display   = isOwner ? 'none'   : 'inline';
     }
 
     function showTeamPrompt() {
@@ -535,6 +542,21 @@
       const teamId = localStorage.getItem('drillLab:teamId');
       await _supabase.from('team_member').delete()
         .eq('user_id', session.user.id).eq('team_id', teamId);
+      showTeamPrompt();
+    });
+
+    document.getElementById('btn-disband-team').addEventListener('click', async () => {
+      const name = document.getElementById('team-name-display').textContent;
+      if (!confirm(`Disband "${name}"? This removes all members and unshares all practices. This cannot be undone.`)) return;
+      const teamId = localStorage.getItem('drillLab:teamId');
+
+      // Unshare all practices belonging to this team
+      await _supabase.from('practice').update({ team_id: null }).eq('team_id', teamId);
+
+      // Delete the team (cascades to team_member rows automatically)
+      const { error } = await _supabase.from('team').delete().eq('id', teamId);
+      if (error) { alert('Could not disband team: ' + error.message); return; }
+
       showTeamPrompt();
     });
 
