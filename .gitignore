@@ -3,3 +3,4 @@
 *.zip
 **drills**
 src/coaches.json
+*.bak
