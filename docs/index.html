@@ -223,13 +223,25 @@
 
       <!-- In a team -->
       <div id="team-info" style="display:none;align-items:center;gap:16px;flex-wrap:wrap;width:100%;">
-        <span class="team-label">My Team:</span>
-        <strong id="team-name-display" style="font-size:15px;color:var(--text);"></strong>
-        <span class="team-label">Invite code:</span>
+        <span class="team-label">Team:</span>
+        <select id="team-switcher" class="team-input" style="flex:0 1 auto;min-width:140px;max-width:220px;"></select>
+        <span class="team-label">Code:</span>
         <span class="team-code-display" id="team-code-display" title="Click to copy"></span>
         <span id="team-copy-hint" style="font-size:12px;color:#a6e3a1;display:none;">Copied!</span>
-        <button class="change-link" id="btn-leave-team" style="margin-left:auto;">Leave team</button>
+        <button class="change-link" id="btn-add-team" style="margin-left:auto;">+ Add team</button>
+        <button class="change-link" id="btn-leave-team" style="display:none;">Leave team</button>
         <button class="change-link" id="btn-disband-team" style="display:none;color:#f38ba8;">Disband team</button>
+
+        <!-- Inline add-team form, hidden by default -->
+        <div id="team-add-form" style="display:none;align-items:center;gap:10px;flex-wrap:wrap;width:100%;margin-top:4px;padding-top:12px;border-top:1px solid var(--border);">
+          <input class="team-input" id="team-name-input2" placeholder="New team name" autocomplete="off" style="max-width:180px;"/>
+          <button class="btn btn-primary" id="btn-create-team2" style="padding:7px 14px;font-size:14px;">Create</button>
+          <span class="team-label" style="margin-left:8px;">or join:</span>
+          <input class="team-input" id="team-code-input2" placeholder="ABC123" autocomplete="off" style="max-width:110px;font-family:monospace;letter-spacing:2px;text-transform:uppercase;"/>
+          <button class="btn btn-outline" id="btn-join-team2" style="padding:7px 14px;font-size:14px;">Join</button>
+          <button class="change-link" id="btn-cancel-add" style="font-size:13px;">Cancel</button>
+          <span class="team-error" id="team-error2"></span>
+        </div>
       </div>
 
     </div>
@@ -440,25 +452,48 @@
     }
 
     async function loadTeamState(session) {
-      const { data: membership } = await _supabase
+      const { data: memberships } = await _supabase
         .from('team_member')
         .select('team_id, team(id, name, code, owner_id)')
-        .eq('user_id', session.user.id)
-        .maybeSingle();
+        .eq('user_id', session.user.id);
 
-      if (membership?.team) {
-        showTeamInfo(membership.team);
-      } else {
+      const teams = (memberships || []).map(m => m.team).filter(Boolean);
+
+      if (teams.length === 0) {
         showTeamPrompt();
+        return;
       }
+
+      // Restore last active team, or default to first
+      const stored = localStorage.getItem('drillLab:teamId');
+      const active = teams.find(t => t.id === stored) || teams[0];
+      showTeamInfo(active, teams);
     }
 
-    async function showTeamInfo(team) {
+    async function showTeamInfo(team, allTeams) {
       localStorage.setItem('drillLab:teamId', team.id);
-      document.getElementById('team-prompt').style.display = 'none';
+      document.getElementById('team-prompt').style.display  = 'none';
+      document.getElementById('team-add-form').style.display = 'none';
       const info = document.getElementById('team-info');
       info.style.display = 'flex';
-      document.getElementById('team-name-display').textContent = team.name;
+
+      // Populate switcher
+      const switcher = document.getElementById('team-switcher');
+      switcher.innerHTML = '';
+      (allTeams || [team]).forEach(t => {
+        const opt = document.createElement('option');
+        opt.value = t.id;
+        opt.textContent = t.name;
+        if (t.id === team.id) opt.selected = true;
+        switcher.appendChild(opt);
+      });
+      switcher._allTeams = allTeams || [team];
+      switcher.onchange = () => {
+        const selected = switcher._allTeams.find(t => t.id === switcher.value);
+        if (selected) showTeamInfo(selected, switcher._allTeams);
+      };
+
+      // Invite code
       const codeEl = document.getElementById('team-code-display');
       codeEl.textContent = team.code;
       codeEl.onclick = () => {
@@ -468,7 +503,7 @@
         setTimeout(() => hint.style.display = 'none', 2000);
       };
 
-      // Show Disband button only to the team owner
+      // Show correct leave/disband button
       const { data: { session } } = await _supabase.auth.getSession();
       const isOwner = team.owner_id === session?.user?.id;
       document.getElementById('btn-disband-team').style.display = isOwner ? 'inline' : 'none';
@@ -543,6 +578,7 @@
       await _supabase.from('team_member').delete()
         .eq('user_id', session.user.id).eq('team_id', teamId);
       showTeamPrompt();
+      await refreshTeams();
     });
 
     document.getElementById('btn-disband-team').addEventListener('click', async () => {
@@ -558,6 +594,57 @@
       if (error) { alert('Could not disband team: ' + error.message); return; }
 
       showTeamPrompt();
+    });
+
+    // Toggle the inline add-team form
+    document.getElementById('btn-add-team').addEventListener('click', () => {
+      const f = document.getElementById('team-add-form');
+      f.style.display = f.style.display === 'none' ? 'flex' : 'none';
+    });
+    document.getElementById('btn-cancel-add').addEventListener('click', () => {
+      document.getElementById('team-add-form').style.display = 'none';
+    });
+
+    function teamError2(msg) {
+      const el = document.getElementById('team-error2');
+      el.textContent   = msg;
+      el.style.display = msg ? 'inline' : 'none';
+    }
+
+    async function refreshTeams() {
+      const { data: { session } } = await _supabase.auth.getSession();
+      if (session) await loadTeamState(session);
+    }
+
+    document.getElementById('btn-create-team2').addEventListener('click', async () => {
+      const name = document.getElementById('team-name-input2').value.trim();
+      if (!name) { teamError2('Enter a team name.'); return; }
+      teamError2('');
+      const { data: { session } } = await _supabase.auth.getSession();
+      const code = randomCode();
+      const { data: team, error } = await _supabase
+        .from('team').insert({ name, code, owner_id: session.user.id }).select().single();
+      if (error) { teamError2(error.message); return; }
+      await _supabase.from('team_member').insert({ team_id: team.id, user_id: session.user.id });
+      document.getElementById('team-name-input2').value = '';
+      await refreshTeams();
+    });
+
+    document.getElementById('btn-join-team2').addEventListener('click', async () => {
+      const code = document.getElementById('team-code-input2').value.trim().toUpperCase();
+      if (!code) { teamError2('Enter an invite code.'); return; }
+      teamError2('');
+      const { data: team, error } = await _supabase
+        .from('team').select('id, name, code, owner_id').eq('code', code).maybeSingle();
+      if (error || !team) { teamError2('Team not found — check the code and try again.'); return; }
+      const { data: { session } } = await _supabase.auth.getSession();
+      const { error: joinError } = await _supabase
+        .from('team_member').insert({ team_id: team.id, user_id: session.user.id });
+      if (joinError && !joinError.message.includes('duplicate')) {
+        teamError2(joinError.message); return;
+      }
+      document.getElementById('team-code-input2').value = '';
+      await refreshTeams();
     });
 
     // Boot — restore session if still active
