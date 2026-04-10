@@ -145,25 +145,55 @@ function drawLine(el) {
 }
 
 function drawArrow(el) {
+  const x1 = el.x, y1 = el.y;
   const x2 = el.x + el.w, y2 = el.y + el.h;
+  const hs  = Math.max(10, (el.strokeWidth ?? 2) * 3.5);
+
+  let tipX = x2, tipY = y2;
+  let ang  = Math.atan2(y2 - y1, x2 - x1);
+
   applyLineStyle(el.lineStyle);
   ctx.beginPath();
+
   if (el.lineStyle === 'wiggle') {
-    wigglyLinePath(el.x, el.y, x2, y2);
+    const pts = computeWigglyPoints(x1, y1, x2, y2);
+
+    // Walk back from the end to find the cut point hs pixels before the tip.
+    // This trims the wiggle shaft so it doesn't bleed out from under the head.
+    let cutIdx = 0;
+    let acc = 0;
+    for (let i = pts.length - 1; i > 0; i--) {
+      acc += Math.hypot(pts[i][0] - pts[i-1][0], pts[i][1] - pts[i-1][1]);
+      if (acc >= hs) { cutIdx = i; break; }
+    }
+
+    // Tip is the last wiggle point; tangent averaged from a few steps back
+    // for a stable, natural-looking head direction.
+    const last = pts[pts.length - 1];
+    const ref  = pts[Math.max(0, pts.length - 5)];
+    tipX = last[0]; tipY = last[1];
+    ang  = Math.atan2(last[1] - ref[1], last[0] - ref[0]);
+
+    // Draw only up to the cut point
+    for (let i = 0; i <= cutIdx; i++) {
+      i === 0 ? ctx.moveTo(pts[i][0], pts[i][1]) : ctx.lineTo(pts[i][0], pts[i][1]);
+    }
   } else {
-    ctx.moveTo(el.x, el.y);
-    ctx.lineTo(x2, y2);
+    // For straight lines, stop exactly at the base of the triangle.
+    const baseX = tipX - hs * Math.cos(ang);
+    const baseY = tipY - hs * Math.sin(ang);
+    ctx.moveTo(x1, y1);
+    ctx.lineTo(baseX, baseY);
   }
+
   ctx.stroke();
   ctx.setLineDash([]);
 
-  // Arrowhead is always solid
-  const ang = Math.atan2(y2 - el.y, x2 - el.x);
-  const hs  = Math.max(10, (el.strokeWidth ?? 2) * 3.5);
+  // Arrowhead triangle — tip projects forward, base sits flush with line end.
   ctx.beginPath();
-  ctx.moveTo(x2, y2);
-  ctx.lineTo(x2 - hs * Math.cos(ang - 0.4), y2 - hs * Math.sin(ang - 0.4));
-  ctx.lineTo(x2 - hs * Math.cos(ang + 0.4), y2 - hs * Math.sin(ang + 0.4));
+  ctx.moveTo(tipX, tipY);
+  ctx.lineTo(tipX - hs * Math.cos(ang - 0.4), tipY - hs * Math.sin(ang - 0.4));
+  ctx.lineTo(tipX - hs * Math.cos(ang + 0.4), tipY - hs * Math.sin(ang + 0.4));
   ctx.closePath();
   ctx.fillStyle = el.strokeColor ?? '#000000';
   ctx.fill();
@@ -296,6 +326,7 @@ function drawPuck(el) {
   ctx.lineWidth = 1.5;
   ctx.stroke();
 }
+
 const HANDLE_R     = 5;    // half-size of resize handle squares
 const HANDLE_HIT_R = 9;    // hit-detection radius (slightly larger for usability)
 const ROT_OFFSET   = 22;   // px above element top for rotation handle
@@ -456,20 +487,40 @@ function renderDragPreview(a, b) {
       ctx.setLineDash([]);
       break;
     case 'arrow': {
+      const hs  = Math.max(10, State.defSW * 3.5);
+      let tipX = b.x, tipY = b.y;
+      let ang  = Math.atan2(dy, dx);
+
       applyLineStyle(State.defLineStyle);
       ctx.beginPath();
+
       if (State.defLineStyle === 'wiggle') {
-        wigglyLinePath(a.x, a.y, b.x, b.y);
+        const pts = computeWigglyPoints(a.x, a.y, b.x, b.y);
+        let cutIdx = 0, acc = 0;
+        for (let i = pts.length - 1; i > 0; i--) {
+          acc += Math.hypot(pts[i][0] - pts[i-1][0], pts[i][1] - pts[i-1][1]);
+          if (acc >= hs) { cutIdx = i; break; }
+        }
+        const last = pts[pts.length - 1];
+        const ref  = pts[Math.max(0, pts.length - 5)];
+        tipX = last[0]; tipY = last[1];
+        ang  = Math.atan2(last[1] - ref[1], last[0] - ref[0]);
+        for (let i = 0; i <= cutIdx; i++) {
+          i === 0 ? ctx.moveTo(pts[i][0], pts[i][1]) : ctx.lineTo(pts[i][0], pts[i][1]);
+        }
       } else {
-        ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y);
+        const baseX = tipX - hs * Math.cos(ang);
+        const baseY = tipY - hs * Math.sin(ang);
+        ctx.moveTo(a.x, a.y); ctx.lineTo(baseX, baseY);
       }
+
       ctx.stroke();
       ctx.setLineDash([]);
-      const ang = Math.atan2(dy, dx), hs = Math.max(10, State.defSW * 3.5);
+
       ctx.beginPath();
-      ctx.moveTo(b.x, b.y);
-      ctx.lineTo(b.x - hs * Math.cos(ang - 0.4), b.y - hs * Math.sin(ang - 0.4));
-      ctx.lineTo(b.x - hs * Math.cos(ang + 0.4), b.y - hs * Math.sin(ang + 0.4));
+      ctx.moveTo(tipX, tipY);
+      ctx.lineTo(tipX - hs * Math.cos(ang - 0.4), tipY - hs * Math.sin(ang - 0.4));
+      ctx.lineTo(tipX - hs * Math.cos(ang + 0.4), tipY - hs * Math.sin(ang + 0.4));
       ctx.closePath();
       ctx.fillStyle = State.defStroke;
       ctx.fill();
@@ -621,28 +672,36 @@ function applyLineStyle(style) {
 }
 
 /**
- * Builds a sine-wave path between two points directly into ctx.
- * Does NOT call ctx.stroke() — caller does that.
+ * Returns the discrete sample points of a sine-wave path between two points.
+ * Used by both wigglyLinePath (for rendering) and drawArrow (for end-tangent).
  */
-function wigglyLinePath(x1, y1, x2, y2) {
-  const dx  = x2 - x1, dy  = y2 - y1;
+function computeWigglyPoints(x1, y1, x2, y2) {
+  const dx = x2 - x1, dy = y2 - y1;
   const len = Math.hypot(dx, dy);
-  if (len < 1) return;
-  const ux = dx / len, uy = dy / len; // unit along
-  const nx = -uy,      ny =  ux;      // unit normal
+  if (len < 1) return [[x1, y1], [x2, y2]];
+  const ux = dx / len, uy = dy / len;
+  const nx = -uy, ny = ux;
   const amp   = 4;
-  const freq  = Math.PI * 2 / 24;     // one full wave every 24 px
+  const freq  = Math.PI * 2 / 24;
   const steps = Math.max(30, Math.ceil(len / 3));
-
-  ctx.beginPath();
+  const pts = [];
   for (let i = 0; i <= steps; i++) {
     const t    = i / steps;
     const dist = t * len;
     const wave = amp * Math.sin(dist * freq);
-    const px   = x1 + t * dx + wave * nx;
-    const py   = y1 + t * dy + wave * ny;
-    i === 0 ? ctx.moveTo(px, py) : ctx.lineTo(px, py);
+    pts.push([x1 + t * dx + wave * nx, y1 + t * dy + wave * ny]);
   }
+  return pts;
+}
+
+/**
+ * Builds a sine-wave path between two points directly into ctx.
+ * Does NOT call ctx.stroke() — caller does that.
+ */
+function wigglyLinePath(x1, y1, x2, y2) {
+  const pts = computeWigglyPoints(x1, y1, x2, y2);
+  ctx.beginPath();
+  pts.forEach(([px, py], i) => i === 0 ? ctx.moveTo(px, py) : ctx.lineTo(px, py));
 }
 
 /**
@@ -677,7 +736,9 @@ function wigglyPenPath(pts) {
     totalLen += segLen;
   }
 }
-/** * Calculates the bounding box of the current selection (single or multi)
+
+/**
+ * Calculates the bounding box of the current selection (single or multi)
  */
 function getSelectionBounds() {
   const selectedIds = Array.from(State.multiSelected);
