@@ -42,7 +42,6 @@ async function captureThumbnail() {
     await new Promise(resolve => {
       try {
         let svgStr = new XMLSerializer().serializeToString(liveSvg);
-        // Strip width/height only from the root <svg> tag, then inject thumbnail size
         svgStr = svgStr.replace(/(<svg\b[^>]*>)/, match =>
           match
             .replace(/\s+width="[^"]*"/, '')
@@ -84,7 +83,6 @@ async function captureThumbnail() {
 // ─────────────────────────────────────────────────────────────
 
 function initIO() {
-  // Sync coach display name from active Supabase session
   _supabase.auth.getSession().then(({ data: { session } }) => {
     if (session) {
       const name = session.user.user_metadata?.display_name || session.user.email;
@@ -144,7 +142,7 @@ function buildScene() {
     appState: {
       viewBackgroundColor: 'transparent',
       rinkView: getRinkView(),
-      _rinkNormalized: true,   // coords are fractions of RINK_W × RINK_H
+      _rinkNormalized: true,
     },
     elements: State.elements.map(el => serializeElement(el)),
     files: {},
@@ -183,7 +181,6 @@ function serializeElement(el) {
   };
 
   if (el.type === 'pen') {
-    // Store pen points as absolute rink-space fractions
     base.points    = el.points.map(([x, y]) => [x / RINK_W, y / RINK_H]);
     base.lineStyle = el.lineStyle ?? 'solid';
   }
@@ -216,8 +213,6 @@ function serializeElement(el) {
 }
 
 function deserializeElement(el) {
-  // Coords are stored as fractions of RINK_W × RINK_H — convert back to rink space
-  const rinkNorm = true; // all new saves use _rinkNormalized; legacy files fall back gracefully
   const x = (el.x ?? 0) * RINK_W;
   const y = (el.y ?? 0) * RINK_H;
   const w = (el.width  ?? 0) * RINK_W;
@@ -225,7 +220,6 @@ function deserializeElement(el) {
 
   let points = el.points ?? null;
   if (points) {
-    // Pen points are absolute rink-fraction coords
     points = points.map(([px, py]) => [px * RINK_W, py * RINK_H]);
   }
 
@@ -341,15 +335,15 @@ async function saveToServer() {
 async function openLibrary() {
   document.getElementById('drill-library')?.remove();
 
+  // ── Hover preview ───────────────────────────────────────────
   const preview = document.createElement('div');
   preview.style.cssText = `
-    position: fixed; z-index: 10001; pointer-events: none;
-    display: none; background: #1e1e2e;
-    border: 1px solid #45475a; border-radius: 8px;
-    padding: 8px; box-shadow: 0 8px 28px rgba(0,0,0,.65);
+    position:fixed;z-index:10001;pointer-events:none;display:none;
+    background:#1e1e2e;border:1px solid #45475a;border-radius:8px;
+    padding:8px;box-shadow:0 8px 28px rgba(0,0,0,.65);
   `;
   const previewImg = document.createElement('img');
-  previewImg.style.cssText = 'display:block; width:280px; border-radius:4px;';
+  previewImg.style.cssText = 'display:block;width:280px;border-radius:4px;';
   preview.appendChild(previewImg);
   document.body.appendChild(preview);
 
@@ -363,25 +357,52 @@ async function openLibrary() {
   }
   function hidePreview() { preview.style.display = 'none'; }
 
+  // ── Modal shell ─────────────────────────────────────────────
   const modal = document.createElement('div');
-  modal.id    = 'drill-library';
+  modal.id = 'drill-library';
   modal.style.cssText = `
-    position: fixed; inset: 0; background: rgba(0,0,0,.65);
-    display: flex; align-items: center; justify-content: center; z-index: 9999;
+    position:fixed;inset:0;background:rgba(0,0,0,.65);
+    display:flex;align-items:center;justify-content:center;z-index:9999;
   `;
+
   const panel = document.createElement('div');
   panel.style.cssText = `
-    background: #1e1e2e; color: #cdd6f4; border-radius: 10px; padding: 24px;
-    width: 580px; max-height: 72vh; overflow-y: auto; font-family: sans-serif;
-    box-shadow: 0 8px 32px rgba(0,0,0,.6);
+    background:#1e1e2e;color:#cdd6f4;border-radius:10px;padding:24px;
+    width:620px;max-height:80vh;display:flex;flex-direction:column;
+    font-family:sans-serif;box-shadow:0 8px 32px rgba(0,0,0,.6);
   `;
-  const closeRow = document.createElement('div');
-  closeRow.style.cssText = 'margin-top:16px;display:flex;justify-content:flex-end;';
-  closeRow.innerHTML = `<button id="lib-close"
+
+  // Header: title + search (non-scrolling)
+  const header = document.createElement('div');
+  header.style.cssText = 'flex-shrink:0;margin-bottom:4px;';
+  header.innerHTML = `<h2 style="margin:0 0 12px;font-size:1.1rem;">📂 Drill Library</h2>`;
+
+  const searchInput = document.createElement('input');
+  searchInput.type        = 'text';
+  searchInput.placeholder = '🔍  Search by title, tag, or coach…';
+  searchInput.style.cssText = `
+    width:100%;box-sizing:border-box;background:#313244;color:#cdd6f4;
+    border:1px solid #45475a;border-radius:6px;padding:8px 12px;
+    font-size:.9rem;margin-bottom:14px;outline:none;
+  `;
+  searchInput.addEventListener('focus', () => searchInput.style.borderColor = '#89b4fa');
+  searchInput.addEventListener('blur',  () => searchInput.style.borderColor = '#45475a');
+  header.appendChild(searchInput);
+  panel.appendChild(header);
+
+  // Scrollable list
+  const list = document.createElement('div');
+  list.style.cssText = 'overflow-y:auto;flex:1;';
+  panel.appendChild(list);
+
+  // Footer close button
+  const footer = document.createElement('div');
+  footer.style.cssText = 'flex-shrink:0;margin-top:16px;display:flex;justify-content:flex-end;';
+  footer.innerHTML = `<button id="lib-close"
     style="background:#45475a;color:#cdd6f4;border:none;border-radius:4px;
            padding:8px 18px;cursor:pointer;">Close</button>`;
-  panel.innerHTML = `<h2 style="margin:0 0 16px;font-size:1.1rem;">📂 Drill Library</h2>`;
-  panel.appendChild(closeRow);
+  panel.appendChild(footer);
+
   modal.appendChild(panel);
   document.body.appendChild(modal);
 
@@ -389,89 +410,251 @@ async function openLibrary() {
   modal.addEventListener('click', e => { if (e.target === modal) closeLibrary(); });
   panel.querySelector('#lib-close').addEventListener('click', closeLibrary);
 
+  // ── Fetch ───────────────────────────────────────────────────
   const status = Object.assign(document.createElement('p'), {
-    textContent: 'Loading…', style: 'color:#6c7086;margin:0 0 12px;',
+    textContent: 'Loading…',
+    style: 'color:#6c7086;margin:0 0 12px;',
   });
-  panel.insertBefore(status, closeRow);
+  list.appendChild(status);
 
-  const [session, { data: drills, error }] = await Promise.all([
+  const [session, { data: drills, error }, { data: practices }] = await Promise.all([
     getSession(),
     _supabase.from('drill')
-      .select('id, title, coach, tags, saved_at, thumbnail, user_id')
+      .select('id, title, coach, tags, saved_at, thumbnail, user_id, slug')
       .order('saved_at', { ascending: false }),
+    _supabase.from('practice').select('items'),
   ]);
 
   if (error) { status.textContent = '✗ ' + error.message; return; }
   status.remove();
 
-  if (!drills.length) {
-    panel.insertBefore(
-      Object.assign(document.createElement('p'), {
-        textContent: 'No drills saved yet. Use 💾 Save to add one.',
-        style: 'color:#6c7086;margin:0 0 12px;',
-      }), closeRow
-    );
+  // Count drill usage across all saved practices
+  const usageCount = {};
+  (practices || []).forEach(p => {
+    try {
+      JSON.parse(p.items || '[]').forEach(item => {
+        if (item.id) usageCount[item.id] = (usageCount[item.id] || 0) + 1;
+      });
+    } catch {}
+  });
+
+  if (!drills || !drills.length) {
+    list.appendChild(Object.assign(document.createElement('p'), {
+      textContent: 'No drills saved yet. Use 💾 Save to add one.',
+      style: 'color:#6c7086;margin:0 0 12px;',
+    }));
     return;
   }
 
   const userId = session?.user?.id || null;
 
+  // Annotate + sort: own drills → used-in-practice (by count) → rest (by count)
+  drills.forEach(d => { d.useCount = usageCount[d.id] || 0; });
+  drills.sort((a, b) => {
+    const aMine = a.user_id === userId;
+    const bMine = b.user_id === userId;
+    if (aMine !== bMine) return aMine ? -1 : 1;
+    return b.useCount - a.useCount;
+  });
+
+  const allCards = [];
+
+  // ── Button style helper ──────────────────────────────────────
+  const btnStyle = (bg, fg = '#1e1e2e') =>
+    `background:${bg};color:${fg};border:none;border-radius:4px;
+     padding:6px 10px;cursor:pointer;font-size:.82rem;white-space:nowrap;`;
+
+  // ── Build cards ──────────────────────────────────────────────
   drills.forEach(d => {
     d.tags    = JSON.parse(d.tags || '[]');
     d.is_mine = d.user_id === userId;
 
-    const card    = document.createElement('div');
     const tagStr  = d.tags?.length ? d.tags.join(', ') : '—';
     const dateStr = d.saved_at ? new Date(d.saved_at).toLocaleDateString() : '';
-    const delBtn  = d.is_mine
-      ? `<button class="lib-btn-del"
-           style="background:#f38ba8;color:#1e1e2e;border:none;border-radius:4px;
-                  padding:6px 10px;cursor:pointer;font-size:.85rem;" title="Delete">✕</button>`
-      : '';
 
+    const card = document.createElement('div');
+    card.dataset.search = [d.title, tagStr, d.coach].join(' ').toLowerCase();
     card.style.cssText = `
-      background: #313244; border-radius: 6px; padding: 12px 14px;
-      margin-bottom: 10px; display: flex; justify-content: space-between;
-      align-items: center; gap: 12px; cursor: default;
-    `;
-    card.innerHTML = `
-      <div style="min-width:0;flex:1;">
-        <strong style="display:block;white-space:nowrap;overflow:hidden;
-                        text-overflow:ellipsis;margin-bottom:4px;">${d.title}</strong>
-        <span style="font-size:.78em;color:#a6adc8;display:block;margin-bottom:2px;">🏷 ${tagStr}</span>
-        <span style="font-size:.75em;color:#6c7086;">${d.coach} · ${dateStr}</span>
-      </div>
-      <div style="display:flex;gap:8px;flex-shrink:0;">
-        <button class="lib-btn-load"
-          style="background:#89b4fa;color:#1e1e2e;border:none;border-radius:4px;
-                 padding:6px 12px;cursor:pointer;font-size:.85rem;">Load</button>
-        ${delBtn}
-      </div>
+      background:#313244;border-radius:6px;padding:12px 14px;
+      margin-bottom:10px;display:flex;justify-content:space-between;
+      align-items:center;gap:12px;cursor:default;
     `;
 
+    // ── Info column ────────────────────────────────────────────
+    const info = document.createElement('div');
+    info.style.cssText = 'min-width:0;flex:1;';
+
+    const titleEl = document.createElement('strong');
+    titleEl.style.cssText = `
+      display:block;white-space:nowrap;overflow:hidden;
+      text-overflow:ellipsis;margin-bottom:4px;
+    `;
+    titleEl.textContent = d.title;
+
+    const tagsEl = Object.assign(document.createElement('span'), {
+      textContent: `🏷 ${tagStr}`,
+    });
+    tagsEl.style.cssText = 'font-size:.78em;color:#a6adc8;display:block;margin-bottom:2px;';
+
+    const metaEl = Object.assign(document.createElement('span'), {
+      textContent: `${d.coach} · ${dateStr}`,
+    });
+    metaEl.style.cssText = 'font-size:.75em;color:#6c7086;';
+
+    info.append(titleEl, tagsEl, metaEl);
+
+    // ── Buttons column ─────────────────────────────────────────
+    const btns = document.createElement('div');
+    btns.style.cssText = 'display:flex;gap:6px;flex-shrink:0;align-items:center;';
+
+    // Load
+    const loadBtn = document.createElement('button');
+    loadBtn.textContent  = 'Load';
+    loadBtn.style.cssText = btnStyle('#89b4fa');
+    loadBtn.title = 'Load drill onto canvas';
+    loadBtn.addEventListener('click', async () => {
+      hidePreview();
+      await loadFromServer(d.id, d.title);
+      closeLibrary();
+    });
+    btns.appendChild(loadBtn);
+
+    // Copy (available on all drills)
+    const copyBtn = document.createElement('button');
+    copyBtn.textContent   = '⧉ Copy';
+    copyBtn.style.cssText = btnStyle('#a6e3a1');
+    copyBtn.title = 'Load as your own copy — saves as a new drill';
+    copyBtn.addEventListener('click', async () => {
+      hidePreview();
+      const { data, error: loadErr } = await _supabase
+        .from('drill').select('scene').eq('id', d.id).single();
+      if (loadErr) { showToast('✗ Could not load: ' + loadErr.message, true); return; }
+      applySceneData(JSON.parse(data.scene));
+      // Append "(copy)" so it saves under a new slug
+      const titleInput = document.getElementById('drill-title');
+      titleInput.value = (titleInput.value || d.title).replace(/ \(copy\d*\)$/, '') + ' (copy)';
+      closeLibrary();
+      showToast('✓ Copied "' + d.title + '" — edit and 💾 Save to keep it');
+    });
+    btns.appendChild(copyBtn);
+
+    // Rename (own drills only)
+    if (d.is_mine) {
+      const renameBtn = document.createElement('button');
+      renameBtn.textContent   = '✎';
+      renameBtn.style.cssText = btnStyle('#f9e2af');
+      renameBtn.title = 'Rename drill';
+      renameBtn.addEventListener('click', () => {
+        const original = d.title;
+
+        // Replace title element with an inline input
+        const input = document.createElement('input');
+        input.type  = 'text';
+        input.value = original;
+        input.style.cssText = `
+          background:#1e1e2e;color:#cdd6f4;border:1px solid #89b4fa;
+          border-radius:4px;padding:3px 7px;font-size:.9rem;
+          width:100%;box-sizing:border-box;
+        `;
+        info.replaceChild(input, titleEl);
+        input.focus();
+        input.select();
+
+        let committed = false;
+
+        const commit = async () => {
+          if (committed) return;
+          committed = true;
+
+          const newTitle = input.value.trim();
+          if (!newTitle || newTitle === original) {
+            info.replaceChild(titleEl, input);
+            return;
+          }
+
+          const newSlug = newTitle.toLowerCase()
+            .replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+
+          const { error: renameErr } = await _supabase.from('drill')
+            .update({ title: newTitle, slug: newSlug })
+            .eq('id', d.id).eq('user_id', userId);
+
+          if (renameErr) {
+            showToast('✗ Rename failed: ' + renameErr.message, true);
+            committed = false;       // allow retry
+            info.replaceChild(titleEl, input);
+            return;
+          }
+
+          // Update local state
+          d.title       = newTitle;
+          d.slug        = newSlug;
+          titleEl.textContent   = newTitle;
+          card.dataset.search   = [newTitle, tagStr, d.coach].join(' ').toLowerCase();
+          info.replaceChild(titleEl, input);
+          showToast('✓ Renamed to "' + newTitle + '"');
+        };
+
+        const cancel = () => {
+          committed = true;
+          info.replaceChild(titleEl, input);
+        };
+
+        input.addEventListener('keydown', e => {
+          if (e.key === 'Enter')  { e.preventDefault(); commit(); }
+          if (e.key === 'Escape') { e.preventDefault(); cancel(); }
+        });
+        input.addEventListener('blur', commit);
+      });
+      btns.appendChild(renameBtn);
+
+      // Delete (own drills only)
+      const delBtn = document.createElement('button');
+      delBtn.textContent   = '✕';
+      delBtn.style.cssText = btnStyle('#f38ba8');
+      delBtn.title = 'Delete drill';
+      delBtn.addEventListener('click', async () => {
+        if (!confirm(`Delete "${d.title}"? This cannot be undone.`)) return;
+        const { error: delErr } = await _supabase.from('drill').delete()
+          .eq('id', d.id).eq('user_id', userId);
+        if (delErr) showToast('✗ Could not delete: ' + delErr.message, true);
+        else { card.remove(); showToast(`Deleted "${d.title}"`); }
+      });
+      btns.appendChild(delBtn);
+    }
+
+    card.append(info, btns);
+
+    // Thumbnail hover preview
     if (d.thumbnail) {
       card.addEventListener('mouseenter', e => showPreview(d.thumbnail, e));
       card.addEventListener('mousemove',  e => movePreview(e));
       card.addEventListener('mouseleave', hidePreview);
     }
 
-    card.querySelector('.lib-btn-load').addEventListener('click', async () => {
-      hidePreview();
-      await loadFromServer(d.id, d.title);
-      closeLibrary();
-    });
-
-    card.querySelector('.lib-btn-del')?.addEventListener('click', async () => {
-      if (!confirm(`Delete "${d.title}"? This cannot be undone.`)) return;
-      const { error } = await _supabase.from('drill').delete()
-        .eq('id', d.id).eq('user_id', userId);
-      if (error) showToast('✗ Could not delete: ' + error.message, true);
-      else { card.remove(); showToast(`Deleted "${d.title}"`); }
-    });
-
-    panel.insertBefore(card, closeRow);
+    allCards.push(card);
+    list.appendChild(card);
   });
+
+  // ── Live search filter ───────────────────────────────────────
+  searchInput.addEventListener('input', () => {
+    const q = searchInput.value.toLowerCase().trim();
+    let visible = 0;
+    allCards.forEach(card => {
+      const show = !q || card.dataset.search.includes(q);
+      card.style.display = show ? '' : 'none';
+      if (show) visible++;
+    });
+  });
+
+  // Auto-focus search
+  requestAnimationFrame(() => searchInput.focus());
 }
+
+
+// ─────────────────────────────────────────────────────────────
+//  Load a single drill from Supabase by ID
+// ─────────────────────────────────────────────────────────────
 
 async function loadFromServer(id, title) {
   const { data, error } = await _supabase.from('drill').select('scene').eq('id', id).single();

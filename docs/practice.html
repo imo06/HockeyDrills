@@ -913,12 +913,29 @@ async function fetchDrills() {
   el.innerHTML = `<div style="padding:20px;text-align:center;font-size:10px;color:var(--muted)">Loading\u2026</div>`;
 
   try {
-    const { data, error } = await _supabase
-      .from('drill')
-      .select('id, title, coach, tags, thumbnail')
-      .order('saved_at', { ascending: false });
+    const [
+      { data: { session } },
+      { data, error },
+      { data: practices },
+    ] = await Promise.all([
+      _supabase.auth.getSession(),
+      _supabase.from('drill').select('id, title, coach, tags, thumbnail, user_id').order('saved_at', { ascending: false }),
+      _supabase.from('practice').select('items'),
+    ]);
 
     if (error) throw new Error(error.message);
+
+    const userId = session?.user?.id || null;
+
+    // Count how many times each drill ID appears across all saved practices
+    const usageCount = {};
+    (practices || []).forEach(p => {
+      try {
+        JSON.parse(p.items || '[]').forEach(item => {
+          if (item.id) usageCount[item.id] = (usageCount[item.id] || 0) + 1;
+        });
+      } catch {}
+    });
 
     drillLibrary = (data || []).map(d => ({
       id:        d.id,
@@ -927,7 +944,15 @@ async function fetchDrills() {
       tags:      JSON.parse(d.tags || '[]'),
       coach:     d.coach,
       thumbnail: d.thumbnail || null,
+      isMine:    d.user_id === userId,
+      useCount:  usageCount[d.id] || 0,
     }));
+
+    // 1. Your drills  2. Used-in-practice (by count desc)  3. Rest (by count desc)
+    drillLibrary.sort((a, b) => {
+      if (a.isMine !== b.isMine) return a.isMine ? -1 : 1;
+      return b.useCount - a.useCount;
+    });
 
     renderLibrary();
   } catch (err) {
