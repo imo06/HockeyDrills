@@ -1,5 +1,6 @@
 {
   "liveServer.settings.ignoreFiles": [
     "**drills**"
-  ]
+  ],
+  "liveServer.settings.host": "0.0.0.0"
 }
